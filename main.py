@@ -1,0 +1,4356 @@
+import asyncio
+import pygame
+import random
+import math
+import array
+import base64
+import io
+import json
+from pathlib import Path
+
+# ============================================================
+# STARFALL | WMB SOFTWARE
+# Alles in einer Datei. Benötigt: pip install pygame
+# ============================================================
+
+pygame.init()
+
+W, H = 900, 650
+FPS = 60
+screen = pygame.display.set_mode((W, H))
+pygame.display.set_caption("STARFALL | WMB Software")
+clock = pygame.time.Clock()
+V = pygame.Vector2
+
+WHITE = (245, 248, 255)
+SILVER = (175, 190, 215)
+BLUE = (65, 145, 255)
+CYAN = (65, 225, 255)
+GREEN = (65, 230, 125)
+RED = (255, 60, 80)
+ORANGE = (255, 145, 45)
+YELLOW = (255, 220, 80)
+PURPLE = (180, 105, 255)
+BG = (5, 9, 25)
+
+font_s = pygame.font.SysFont("arial", 17)
+font = pygame.font.SysFont("arial", 23, bold=True)
+font_m = pygame.font.SysFont("arial", 28, bold=True)
+font_l = pygame.font.SysFont("arialblack", 52, bold=True)
+font_title = pygame.font.SysFont("arialblack", 79, bold=True)
+
+LANG = {
+    "de": {
+        "settings": "EINSTELLUNGEN", "effects_volume": "EFFEKTE", "music_volume": "MUSIK", "boss_volume": "BOSS-ALARME", "wave_preview": "WELLEN-VORSCHAU", "formation": "FORMATION", "dodge": "AUSWEICHEN", "salvo": "SALVEN", "side": "SEITENSCHUSS", "magnet": "POWER-UP-MAGNET", "special_ready": "SPEZIAL BEREIT", "settings_back": "Zurück: ESC",
+        "choose_language": "SPRACHE WÄHLEN",
+        "on": "AN", "off": "AUS", "skip_intro": "LEERTASTE: INTRO ÜBERSPRINGEN",
+        "presents": "PRÄSENTIERT", "journey": "EINE REISE DURCH DIE STERNE",
+        "language": "SPRACHE", "back": "ZURÜCK", "hard": "SCHWER",
+        "mouse": "MAUSMODUS", "main": "HAUPTSPIEL",
+        "medium": "MITTLERES SPIEL", "easy": "LEICHTES SPIEL",
+        "duel": "2 SPIELER GEGENEINANDER",
+        "coop": "2 SPIELER ZUSAMMEN", "p1": "SPIELER 1",
+        "p2": "SPIELER 2", "lives": "LEBEN", "points": "PUNKTE",
+        "wave": "WELLE", "rocket": "RAKETE", "shield": "SCHILD",
+        "special": "SPEZIAL", "laser": "LASER", "turbo": "TURBO",
+        "pause": "PAUSE", "resume": "FORTSETZEN",
+        "controls": "STEUERUNG", "menu": "HAUPTMENÜ",
+        "over": "SPIEL VORBEI", "victory": "SIEG!",
+        "p1wins": "SPIELER 1 GEWINNT!",
+        "p2wins": "SPIELER 2 GEWINNT!",
+        "return": "R = ZURÜCK ZUM MENÜ",
+        "complete": "WELLE GESCHAFFT!",
+        "giant": "DER RIESENBOSS",
+        "angry": "DER BOSS WIRD WÜTEND!",
+        "furious": "DER BOSS RAST VOR WUT!",
+        "probes": "RAUMSONDEN IM ANFLUG!",
+        "six": "SECHS SUPERLASER-SONDEN!",
+        "counter": "BOSS-GEGENANGRIFF!",
+        "summon": "VERSTÄRKUNG!",
+        "boss_shield": "BOSSSCHILD AKTIV",
+        "triple": "DREIFACHLASER",
+        "rapid": "SCHNELLFEUER",
+        "heal": "+1 LEBEN",
+        "rocket_ready": "RAKETE BEREIT",
+        "shield_ready": "SCHILD BEREIT",
+        "help": [
+            "A/D: bewegen | S: Schild",
+            "Einzelspiel: E = Lenkrakete | LEERTASTE = Spezial",
+            "Mausmodus: Maus zielen und Linksklick schießen",
+            "Ohne Mausmodus: W = schießen",
+            "Koop/Duell, Pfeiltasten: HOCH = Laser, RUNTER = Schild",
+            "Pfeiltasten: SHIFT = Rakete, OPTION/ALT = Spezial",
+            "WASD-Spieler: W = Laser, E = Rakete, F = Spezial",
+            "ESC = Pause | Überstehe zehn Wellen!"
+        ]
+    },
+    "en": {
+        "settings": "SETTINGS", "effects_volume": "EFFECTS", "music_volume": "MUSIC", "boss_volume": "BOSS ALARMS", "wave_preview": "WAVE PREVIEW", "formation": "FORMATION", "dodge": "DODGING", "salvo": "BURSTS", "side": "SIDE SHOTS", "magnet": "POWER-UP MAGNET", "special_ready": "SPECIAL READY", "settings_back": "Back: ESC",
+        "choose_language": "CHOOSE LANGUAGE",
+        "on": "ON", "off": "OFF", "skip_intro": "SPACE: SKIP INTRO",
+        "presents": "PRESENTS", "journey": "A JOURNEY THROUGH THE STARS",
+        "language": "LANGUAGE", "back": "BACK", "hard": "HARD",
+        "mouse": "MOUSE MODE", "main": "MAIN GAME",
+        "medium": "MEDIUM GAME", "easy": "EASY GAME",
+        "duel": "2 PLAYER VERSUS", "coop": "2 PLAYER CO-OP",
+        "p1": "PLAYER 1", "p2": "PLAYER 2",
+        "lives": "LIVES", "points": "POINTS", "wave": "WAVE",
+        "rocket": "ROCKET", "shield": "SHIELD",
+        "special": "SPECIAL", "laser": "LASER", "turbo": "TURBO",
+        "pause": "PAUSED", "resume": "RESUME",
+        "controls": "CONTROLS", "menu": "MAIN MENU",
+        "over": "GAME OVER", "victory": "VICTORY!",
+        "p1wins": "PLAYER 1 WINS!", "p2wins": "PLAYER 2 WINS!",
+        "return": "R = RETURN TO MENU",
+        "complete": "WAVE COMPLETE!",
+        "giant": "THE GIANT BOSS",
+        "angry": "THE BOSS IS ANGRY!",
+        "furious": "THE BOSS IS FURIOUS!",
+        "probes": "SPACE PROBES INCOMING!",
+        "six": "SIX SUPER LASER PROBES!",
+        "counter": "BOSS COUNTERATTACK!",
+        "summon": "REINFORCEMENTS!",
+        "boss_shield": "BOSS SHIELD ACTIVE",
+        "triple": "TRIPLE LASER", "rapid": "RAPID FIRE",
+        "heal": "+1 LIFE", "rocket_ready": "ROCKET READY",
+        "shield_ready": "SHIELD READY",
+        "help": [
+            "A/D: move | S: shield",
+            "Solo: E = homing rocket | SPACE = special",
+            "Mouse mode: aim and left-click to fire",
+            "Without mouse mode: W = fire",
+            "Co-op/versus, arrows: UP = laser, DOWN = shield",
+            "Arrow player: SHIFT = rocket, OPTION/ALT = special",
+            "WASD player: W = laser, E = rocket, F = special",
+            "ESC = pause | Survive ten waves!"
+        ]
+    },
+    "fr": {
+        "settings": "PARAMÈTRES", "effects_volume": "EFFETS", "music_volume": "MUSIQUE", "boss_volume": "ALARMES DES BOSS", "wave_preview": "APERÇU DE LA VAGUE", "formation": "FORMATION", "dodge": "ESQUIVE", "salvo": "RAFALES", "side": "TIRS LATÉRAUX", "magnet": "AIMANT À BONUS", "special_ready": "SPÉCIAL PRÊT", "settings_back": "Retour : ESC",
+        "choose_language": "CHOISIR LA LANGUE",
+        "on": "ACTIF", "off": "INACTIF", "skip_intro": "ESPACE : PASSER L’INTRO",
+        "presents": "PRÉSENTE", "journey": "UN VOYAGE PARMI LES ÉTOILES",
+        "language": "LANGUE", "back": "RETOUR",
+        "hard": "DIFFICILE", "mouse": "MODE SOURIS",
+        "main": "JEU PRINCIPAL", "medium": "JEU MOYEN",
+        "easy": "JEU FACILE", "duel": "DUEL À 2 JOUEURS",
+        "coop": "COOP À 2 JOUEURS", "p1": "JOUEUR 1",
+        "p2": "JOUEUR 2", "lives": "VIES", "points": "POINTS",
+        "wave": "VAGUE", "rocket": "MISSILE",
+        "shield": "BOUCLIER", "special": "SPÉCIAL",
+        "laser": "LASER", "turbo": "TURBO", "pause": "PAUSE",
+        "resume": "REPRENDRE", "controls": "COMMANDES",
+        "menu": "MENU PRINCIPAL", "over": "PARTIE TERMINÉE",
+        "victory": "VICTOIRE!", "p1wins": "JOUEUR 1 GAGNE!",
+        "p2wins": "JOUEUR 2 GAGNE!",
+        "return": "R = RETOUR AU MENU",
+        "complete": "VAGUE TERMINÉE!",
+        "giant": "LE BOSS GÉANT",
+        "angry": "LE BOSS EST EN COLÈRE!",
+        "furious": "LE BOSS EST FURIEUX!",
+        "probes": "SONDES SPATIALES EN APPROCHE!",
+        "six": "SIX SONDES SUPER LASER!",
+        "counter": "CONTRE-ATTAQUE DU BOSS!",
+        "summon": "RENFORTS!",
+        "boss_shield": "BOUCLIER DU BOSS ACTIF",
+        "triple": "TRIPLE LASER", "rapid": "TIR RAPIDE",
+        "heal": "+1 VIE", "rocket_ready": "MISSILE PRÊT",
+        "shield_ready": "BOUCLIER PRÊT",
+        "help": [
+            "A/D: bouger | S: bouclier",
+            "Solo: E = missile guidé | ESPACE = spécial",
+            "Mode souris: viser et clic gauche pour tirer",
+            "Sans souris: W = tirer",
+            "Coop/duel, flèches: HAUT = laser, BAS = bouclier",
+            "Flèches: SHIFT = missile, OPTION/ALT = spécial",
+            "Joueur WASD: W = laser, E = missile, F = spécial",
+            "ESC = pause | Survis à dix vagues!"
+        ]
+    },
+    "it": {
+        "settings": "IMPOSTAZIONI", "effects_volume": "EFFETTI", "music_volume": "MUSICA", "boss_volume": "ALLARMI DEI BOSS", "wave_preview": "ANTEPRIMA ONDATA", "formation": "FORMAZIONE", "dodge": "SCHIVATA", "salvo": "RAFFICHE", "side": "COLPI LATERALI", "magnet": "MAGNETE BONUS", "special_ready": "SPECIALE PRONTO", "settings_back": "Indietro: ESC",
+        "choose_language": "SCEGLI LA LINGUA",
+        "on": "ATTIVO", "off": "SPENTO", "skip_intro": "SPAZIO: SALTA INTRO",
+        "presents": "PRESENTA", "journey": "UN VIAGGIO TRA LE STELLE",
+        "language": "LINGUA", "back": "INDIETRO",
+        "hard": "DIFFICILE", "mouse": "MODALITÀ MOUSE",
+        "main": "GIOCO PRINCIPALE", "medium": "GIOCO MEDIO",
+        "easy": "GIOCO FACILE", "duel": "DUELLO A 2 GIOCATORI",
+        "coop": "CO-OP A 2 GIOCATORI", "p1": "GIOCATORE 1",
+        "p2": "GIOCATORE 2", "lives": "VITE", "points": "PUNTI",
+        "wave": "ONDATA", "rocket": "MISSILE",
+        "shield": "SCUDO", "special": "SPECIALE",
+        "laser": "LASER", "turbo": "TURBO", "pause": "PAUSA",
+        "resume": "CONTINUA", "controls": "COMANDI",
+        "menu": "MENU PRINCIPALE", "over": "PARTITA FINITA",
+        "victory": "VITTORIA!", "p1wins": "VINCE IL GIOCATORE 1!",
+        "p2wins": "VINCE IL GIOCATORE 2!",
+        "return": "R = TORNA AL MENU",
+        "complete": "ONDATA COMPLETATA!",
+        "giant": "IL BOSS GIGANTE",
+        "angry": "IL BOSS È ARRABBIATO!",
+        "furious": "IL BOSS È FURIOSO!",
+        "probes": "SONDE SPAZIALI IN ARRIVO!",
+        "six": "SEI SONDE SUPER LASER!",
+        "counter": "CONTRATTACCO DEL BOSS!",
+        "summon": "RINFORZI!",
+        "boss_shield": "SCUDO DEL BOSS ATTIVO",
+        "triple": "TRIPLO LASER", "rapid": "FUOCO RAPIDO",
+        "heal": "+1 VITA", "rocket_ready": "MISSILE PRONTO",
+        "shield_ready": "SCUDO PRONTO",
+        "help": [
+            "A/D: muovi | S: scudo",
+            "Solo: E = missile guidato | SPAZIO = speciale",
+            "Modalità mouse: mira e clic sinistro per sparare",
+            "Senza mouse: W = spara",
+            "Coop/duello, frecce: SU = laser, GIÙ = scudo",
+            "Frecce: SHIFT = missile, OPTION/ALT = speciale",
+            "Giocatore WASD: W = laser, E = missile, F = speciale",
+            "ESC = pausa | Supera dieci ondate!"
+        ]
+    }
+}
+
+language = "de"
+LANG_NAMES = {
+    "de": "Deutsch", "en": "English",
+    "fr": "Français", "it": "Italiano"
+}
+
+
+def tr(key):
+    return LANG[language][key]
+
+
+def clamp(n, lo, hi):
+    return max(lo, min(hi, n))
+
+
+def ip(v):
+    return round(v[0]), round(v[1])
+
+
+def draw_text(value, f, color, x, y, centered=True):
+    img = f.render(str(value), True, color)
+    rect = img.get_rect()
+    if centered:
+        rect.center = (round(x), round(y))
+    else:
+        rect.topleft = (round(x), round(y))
+    screen.blit(img, rect)
+    return rect
+
+
+def line(color, a, b, width=2):
+    pygame.draw.line(screen, color, ip(a), ip(b), width)
+
+
+def poly(color, points, width=0):
+    pygame.draw.polygon(screen, color, [ip(p) for p in points], width)
+
+
+# ============================================================
+# AUDIO: ALLE SOUNDS WERDEN DIREKT ERZEUGT
+# ============================================================
+
+SOUNDS = {}
+SFX_VOLUME = 0.70
+MUSIC_VOLUME = 0.42
+BOSS_VOLUME = 0.65
+MUSIC_CHANNEL = None
+MUSIC_SOUND = None
+AUDIO_OK = pygame.mixer.get_init() is not None
+
+if AUDIO_OK:
+    try:
+        rate = 44100
+
+        def make_sound(kind, duration, volume=0.25):
+            samples = array.array("h")
+            count = int(rate * duration)
+            phase = 0.0
+
+            for i in range(count):
+                u = i / max(1, count - 1)
+                fade_in = min(1.0, u * 35)
+                fade_out = min(1.0, (1.0 - u) * 12)
+                env = fade_in * fade_out
+
+                if kind == "shot":
+                    freq = 1000 - 650 * u
+                    phase += math.tau * freq / rate
+                    value = math.sin(phase) * (1 - u) ** 1.7
+
+                elif kind == "enemy":
+                    freq = 430 - 210 * u
+                    phase += math.tau * freq / rate
+                    value = math.sin(phase) * (1 - u)
+
+                elif kind == "rocket":
+                    freq = 120 + 180 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        math.sin(phase) * 0.65
+                        + random.uniform(-0.3, 0.3)
+                    ) * env
+
+                elif kind == "hit":
+                    freq = 210 - 150 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        random.uniform(-0.6, 0.6)
+                        + math.sin(phase) * 0.4
+                    ) * (1 - u) ** 2
+
+                # Unterschiedliche Trefferklänge für jede Jägerklasse.
+                elif kind.startswith("impact_"):
+                    profiles = {
+                        "impact_e1": (960, 420, 0.12, 0.15),
+                        "impact_e2": (520, 185, 0.32, 0.12),
+                        "impact_e3": (260, 90, 0.48, 0.25),
+                        "impact_e4": (730, 220, 0.22, 0.38),
+                        "impact_boss": (180, 65, 0.55, 0.32),
+                        "impact_giant": (110, 38, 0.70, 0.45),
+                        "impact_shield": (1300, 560, 0.04, 0.08),
+                    }
+                    high, low, noise, metallic = profiles.get(
+                        kind, (600, 180, 0.2, 0.1)
+                    )
+                    freq = high + (low - high) * u
+                    phase += math.tau * freq / rate
+                    ring = math.sin(phase * (1.5 + metallic))
+                    value = (
+                        math.sin(phase) * 0.72
+                        + ring * metallic
+                        + random.uniform(-1, 1) * noise
+                    ) * env * (1 - u) ** 1.1
+
+                elif kind == "boom":
+                    freq = 115 - 85 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        random.uniform(-0.7, 0.7)
+                        + math.sin(phase) * 0.4
+                    ) * (1 - u) ** 2
+
+                elif kind == "power":
+                    freq = 480 + 700 * u
+                    phase += math.tau * freq / rate
+                    value = math.sin(phase) * env
+
+                elif kind == "special":
+                    freq = 1300 - 900 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        math.sin(phase)
+                        + 0.25 * math.sin(phase * 2)
+                    ) * env
+
+                # NEU: Tiefer Alarm, der beim Wütendwerden
+                # deutlich ansteigt und am Ende pulsiert.
+                elif kind == "boss_angry":
+                    freq = 80 + 240 * u
+                    phase += math.tau * freq / rate
+                    pulse = 0.65 + 0.35 * math.sin(u * 42)
+                    value = (
+                        math.sin(phase)
+                        + 0.4 * math.sin(phase * 0.5)
+                    ) * pulse * env
+
+                # NEU: Noch intensiverer Alarm für 3 Leben.
+                elif kind == "boss_furious":
+                    freq = 95 + 470 * u
+                    phase += math.tau * freq / rate
+                    pulse = 0.55 + 0.45 * math.sin(u * 85)
+                    value = (
+                        math.sin(phase)
+                        + 0.35 * math.sin(phase * 1.5)
+                        + 0.16 * random.uniform(-1, 1)
+                    ) * pulse * env
+
+                # NEU: Sondenstart – futuristisches
+                # Anschwellen mit rauschendem Antrieb.
+                elif kind == "probe_launch":
+                    freq = 170 + 530 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        0.72 * math.sin(phase)
+                        + 0.18 * math.sin(phase * 2)
+                        + 0.18 * random.uniform(-1, 1)
+                    ) * env
+
+                # NEU: Mechanisches Drehen der Raumsonden.
+                elif kind == "probe_turn":
+                    freq = 240 + 100 * math.sin(u * math.tau * 4)
+                    phase += math.tau * freq / rate
+                    wobble = 0.55 + 0.45 * math.sin(u * 95)
+                    value = (
+                        math.sin(phase)
+                        + 0.25 * math.sin(phase * 3)
+                    ) * wobble * env
+
+                # NEU: Kräftiger Superlaser-Sound.
+                elif kind == "probe_fire":
+                    freq = 1450 - 1150 * u
+                    phase += math.tau * freq / rate
+                    value = (
+                        0.8 * math.sin(phase)
+                        + 0.22 * math.sin(phase * 2.02)
+                        + 0.12 * random.uniform(-1, 1)
+                    ) * (1 - u) ** 0.65
+
+                else:
+                    phase += math.tau * 400 / rate
+                    value = math.sin(phase) * env
+
+                value = clamp(value * volume, -1, 1)
+                sample = int(value * 25000)
+
+                # Stereo: links und rechts derselbe Ton.
+                samples.append(sample)
+                samples.append(sample)
+
+            return pygame.mixer.Sound(buffer=samples.tobytes())
+
+        definitions = {
+            "shot": ("shot", 0.11, 0.17),
+            "enemy": ("enemy", 0.12, 0.11),
+            "rocket": ("rocket", 0.30, 0.19),
+            "hit": ("hit", 0.17, 0.27),
+            "impact_e1": ("impact_e1", 0.15, 0.21),
+            "impact_e2": ("impact_e2", 0.22, 0.23),
+            "impact_e3": ("impact_e3", 0.29, 0.26),
+            "impact_e4": ("impact_e4", 0.25, 0.25),
+            "impact_boss": ("impact_boss", 0.38, 0.28),
+            "impact_giant": ("impact_giant", 0.47, 0.30),
+            "impact_shield": ("impact_shield", 0.16, 0.15),
+            "boom": ("boom", 0.42, 0.32),
+            "power": ("power", 0.25, 0.18),
+            "special": ("special", 0.38, 0.24),
+            "boss_angry": ("boss_angry", 1.25, 0.29),
+            "boss_furious": ("boss_furious", 1.65, 0.34),
+            "probe_launch": ("probe_launch", 0.72, 0.23),
+            "probe_turn": ("probe_turn", 0.45, 0.16),
+            "probe_fire": ("probe_fire", 0.55, 0.26),
+        }
+
+        for name, args in definitions.items():
+            SOUNDS[name] = make_sound(*args)
+
+        pygame.mixer.set_num_channels(20)
+        pygame.mixer.set_reserved(1)  # Musikkanal vor Effekt-Sounds schützen.
+
+        # Eigenständiger, epischer Sci-Fi-Soundtrack: 8 Takte,
+        # harmonische Streicher-/Synth-Flächen, Bass-Ostinato,
+        # Lead-Melodie, Arpeggio und treibendes Schlagzeug.
+        # Keine Musikdatei und keine zusätzlichen Bibliotheken nötig.
+        def make_music():
+            bpm = 132
+            beat = 60.0 / bpm
+            beats = 32  # Acht Takte im 4/4-Takt.
+            duration = beats * beat
+            total = int(rate * duration)
+            data = array.array("h")
+            # Am – F – C – G – Am – F – Dm – E
+            chords = (
+                (110.00, 130.81, 164.81),
+                (87.31, 110.00, 130.81),
+                (130.81, 164.81, 196.00),
+                (98.00, 123.47, 146.83),
+                (110.00, 130.81, 164.81),
+                (87.31, 110.00, 130.81),
+                (73.42, 87.31, 110.00),
+                (82.41, 103.83, 123.47),
+            )
+            melody = (
+                440.00, 523.25, 659.25, 783.99,
+                880.00, 783.99, 659.25, 523.25,
+                440.00, 523.25, 659.25, 698.46,
+                659.25, 523.25, 493.88, 392.00,
+                523.25, 659.25, 783.99, 1046.50,
+                987.77, 783.99, 659.25, 523.25,
+                440.00, 523.25, 587.33, 659.25,
+                783.99, 659.25, 493.88, 415.30,
+            )
+            rng = random.Random(2609)
+            # Einmalige, kurze Drum-Noise-Samples statt Zufallsaufruf
+            # für jedes der ~640.000 Stereo-Samples.
+            noise = [rng.uniform(-1, 1) for _ in range(2048)]
+            tau = math.tau
+            for i in range(total):
+                t = i / rate
+                beat_pos = t / beat
+                beat_index = int(beat_pos)
+                bar = (beat_index // 4) % 8
+                root, third, fifth = chords[bar]
+                within_beat = (beat_pos % 1) * beat
+                eighth_pos = (beat_pos * 2) % 1
+                eighth_time = eighth_pos * beat / 2
+                sixteenth = int(beat_pos * 4)
+                sixteenth_time = ((beat_pos * 4) % 1) * beat / 4
+
+                # Breit klingende Akkorde mit langsamem Anschwellen.
+                swell = 0.72 + 0.28 * math.sin(tau * t / (beat * 8))
+                pad = 0.0
+                for freq in (root * 2, third * 2, fifth * 2):
+                    pad += (
+                        math.sin(tau * freq * t)
+                        + 0.22 * math.sin(tau * (freq * 1.004) * t)
+                    )
+                pad *= 0.043 * swell
+
+                # Pulsierender Bass mit Obertönen.
+                bass_freq = root / 2 if beat_index % 4 in (0, 2) else root
+                bass_env = 0.60 + 0.40 * math.exp(-within_beat * 8)
+                bass = (
+                    math.sin(tau * bass_freq * t)
+                    + 0.28 * math.sin(tau * bass_freq * 2 * t)
+                ) * bass_env * 0.19
+
+                # Wechselnde Achtel-Arpeggios.
+                arp_note = (root, fifth, third, fifth)[int(beat_pos * 2) % 4] * 4
+                arp_env = math.exp(-eighth_time * 11)
+                arp = (
+                    math.sin(tau * arp_note * t)
+                    + 0.16 * math.sin(tau * arp_note * 2 * t)
+                ) * arp_env * 0.065
+
+                # Hauptmelodie kommt ab Takt 3 hinzu und steigert sich.
+                melody_step = beat_index % len(melody)
+                lead_freq = melody[melody_step]
+                lead_env = min(1, within_beat * 25) * (
+                    0.65 + 0.35 * math.exp(-within_beat * 3)
+                )
+                lead = 0.0
+                if bar >= 2:
+                    lead = (
+                        math.sin(tau * lead_freq * t)
+                        + 0.27 * math.sin(tau * lead_freq * 2 * t)
+                        + 0.08 * math.sin(tau * lead_freq * 3 * t)
+                    ) * lead_env * (0.085 if bar < 6 else 0.12)
+
+                # Kick auf 1 und 3; Snare auf 2 und 4.
+                kick = 0.0
+                if beat_index % 2 == 0 and within_beat < 0.22:
+                    kt = within_beat
+                    kick = math.sin(
+                        tau * (88 * kt - 42 * kt * kt)
+                    ) * math.exp(-kt * 22) * 0.32
+                snare = 0.0
+                if beat_index % 2 == 1 and within_beat < 0.16:
+                    snare = (
+                        noise[i % len(noise)] * 0.22
+                        + math.sin(tau * 170 * within_beat) * 0.08
+                    ) * math.exp(-within_beat * 24)
+                hat = noise[(i * 7) % len(noise)] * (
+                    math.exp(-sixteenth_time * 90) * 0.038
+                )
+                if sixteenth % 4 == 3:
+                    hat *= 0.65
+
+                # Leichter Limiter verhindert Übersteuerung.
+                mix = pad + bass + arp + lead + kick + snare + hat
+                mix = math.tanh(mix * 1.35) * 0.75
+                sample = int(mix * 32700)
+                data.append(sample)
+                data.append(sample)
+            return pygame.mixer.Sound(buffer=data.tobytes())
+
+        MUSIC_SOUND = make_music()
+        MUSIC_CHANNEL = pygame.mixer.Channel(0)
+        MUSIC_CHANNEL.set_volume(MUSIC_VOLUME)
+        MUSIC_CHANNEL.play(MUSIC_SOUND, loops=-1)
+
+    except (pygame.error, ValueError, OverflowError):
+        AUDIO_OK = False
+        SOUNDS = {}
+
+
+def sound(name):
+    if AUDIO_OK and name in SOUNDS:
+        volume = BOSS_VOLUME if name in (
+            "boss_angry", "boss_furious", "probe_launch",
+            "probe_turn", "probe_fire"
+        ) else SFX_VOLUME
+        SOUNDS[name].set_volume(volume)
+        SOUNDS[name].play()
+
+
+def update_music_volume():
+    if MUSIC_CHANNEL is not None:
+        MUSIC_CHANNEL.set_volume(MUSIC_VOLUME * (0.48 if paused else 1.0))
+
+
+# ============================================================
+# HINTERGRUND, PARTIKEL, TEXTE
+# ============================================================
+
+stars = [
+    [
+        random.randrange(W),
+        random.randrange(H),
+        random.uniform(25, 115),
+        random.choice((1, 1, 2))
+    ]
+    for _ in range(160)
+]
+
+particles = []
+rings = []
+messages = []
+shake = 0.0
+
+
+backdrop_cache = {}
+
+def background(dt):
+    screen.fill(BG)
+    # Wechselnde, dezent gezeichnete Weltraumkulissen; keine externen Bilder.
+    scene = ((wave - 1) // 3) % 4 if state == "game" else 0
+    backdrop = backdrop_cache.get(scene)
+    if backdrop is None:
+        backdrop = pygame.Surface((W, H), pygame.SRCALPHA)
+    if scene == 1 and scene not in backdrop_cache:
+        for cx, cy, radius, color in ((180, 165, 165, (58, 40, 115)), (690, 405, 220, (27, 65, 120))):
+            for r in range(radius, 12, -12):
+                pygame.draw.circle(backdrop, (*color, 4), (cx, cy), r)
+    elif scene == 2 and scene not in backdrop_cache:
+        pygame.draw.circle(backdrop, (52, 95, 155, 95), (740, 370), 170)
+        pygame.draw.circle(backdrop, (17, 32, 67, 210), (765, 352), 161)
+        pygame.draw.ellipse(backdrop, (100, 150, 215, 75), (490, 323, 505, 92), 3)
+    elif scene == 3 and scene not in backdrop_cache:
+        for i in range(9):
+            x = 90 + i * 103
+            pygame.draw.line(backdrop, (35, 90, 130, 35), (x, 0), (x - 185, H), 2)
+        pygame.draw.circle(backdrop, (115, 45, 65, 80), (440, 210), 155)
+    backdrop_cache[scene] = backdrop
+    screen.blit(backdrop, (0, 0))
+    for s in stars:
+        s[1] += s[2] * dt
+        if s[1] > H:
+            s[1] = 0
+            s[0] = random.randrange(W)
+
+        brightness = int(100 + s[2])
+        pygame.draw.circle(
+            screen,
+            (brightness // 2, brightness * 3 // 4, brightness),
+            (int(s[0]), int(s[1])),
+            s[3]
+        )
+
+
+def sparks(pos, color, count=18, speed=160):
+    for _ in range(count):
+        angle = random.uniform(0, math.tau)
+        particles.append({
+            "pos": V(pos),
+            "vel": V(math.cos(angle), math.sin(angle))
+                   * random.uniform(speed * 0.25, speed),
+            "life": random.uniform(0.25, 0.65),
+            "color": color,
+            "size": random.randint(2, 5)
+        })
+
+
+def add_ring(pos, color, size=80):
+    rings.append({
+        "pos": V(pos),
+        "radius": 5.0,
+        "max": size,
+        "life": 0.5,
+        "color": color
+    })
+
+
+def explosion(pos, color=ORANGE, big=False):
+    global shake
+    sound("boom")
+    sparks(pos, color, 60 if big else 23, 320 if big else 185)
+    sparks(pos, YELLOW, 16 if big else 7, 200)
+    add_ring(pos, color, 155 if big else 65)
+    shake = max(shake, 8 if big else 3)
+
+
+def announce(key, now, color=YELLOW):
+    messages.append({"key": key, "until": now + 1800, "color": color})
+
+
+def effects_update(dt, now):
+    for p in particles[:]:
+        p["pos"] += p["vel"] * dt
+        p["vel"] *= max(0, 1 - dt * 1.9)
+        p["life"] -= dt
+        if p["life"] <= 0:
+            particles.remove(p)
+            continue
+        pygame.draw.circle(
+            screen, p["color"], ip(p["pos"]),
+            max(1, int(p["size"] * min(1, p["life"] * 2)))
+        )
+
+    for r in rings[:]:
+        r["life"] -= dt
+        r["radius"] += r["max"] * 2 * dt
+        if r["life"] <= 0:
+            rings.remove(r)
+            continue
+        pygame.draw.circle(
+            screen, r["color"], ip(r["pos"]),
+            int(r["radius"]), max(1, int(r["life"] * 6))
+        )
+
+    for m in messages[:]:
+        if now >= m["until"]:
+            messages.remove(m)
+
+    for i, m in enumerate(messages[-3:]):
+        draw_text(tr(m["key"]), font, m["color"], W // 2, 105 + i * 29)
+
+
+# ============================================================
+# RAUMSCHIFFE: SPIELER UND GEGNER
+# ============================================================
+
+def ship(pos, kind, facing=-1, now=0, rage=0):
+    x, y = pos
+
+    def p(dx, dy):
+        return round(x + dx), round(y + dy * facing)
+
+    def shape(color, points, width=0):
+        pygame.draw.polygon(
+            screen, color,
+            [p(dx, dy) for dx, dy in points],
+            width
+        )
+
+    def stroke(color, a, b, width=2):
+        pygame.draw.line(screen, color, p(*a), p(*b), width)
+
+    def circle(color, dx, dy, radius, width=0):
+        pygame.draw.circle(screen, color, p(dx, dy), radius, width)
+
+    flame = 9 + 4 * math.sin(now / 85)
+
+    if kind == "solo":
+        shape(ORANGE, [(-5, -18), (0, -18 - flame), (5, -18)])
+        hull = [
+            (0, 33), (-10, 9), (-31, -16), (-12, -10),
+            (0, -23), (12, -10), (31, -16), (10, 9)
+        ]
+        shape((20, 42, 85), hull)
+        shape(BLUE, hull, 3)
+        shape(CYAN, [(0, 18), (-6, -7), (0, -16), (6, -7)])
+        circle(WHITE, 0, 0, 3)
+
+    elif kind == "p1":
+        for dx in (-11, 11):
+            shape(ORANGE, [
+                (dx - 4, -17), (dx, -17 - flame), (dx + 4, -17)
+            ])
+        hull = [
+            (0, 29), (-12, 15), (-37, 12), (-37, -9),
+            (-19, -15), (-10, -24), (10, -24),
+            (19, -15), (37, -9), (37, 12), (12, 15)
+        ]
+        shape((16, 48, 49), hull)
+        shape(GREEN, hull, 3)
+        shape((75, 180, 125), [
+            (0, 21), (-9, 4), (-7, -11), (7, -11), (9, 4)
+        ])
+        circle(WHITE, 0, 3, 4)
+
+    elif kind == "p2":
+        shape(ORANGE, [(-5, -15), (0, -15 - flame), (5, -15)])
+        hull = [
+            (0, 34), (-9, 8), (-35, -19), (-13, -13),
+            (0, -22), (13, -13), (35, -19), (9, 8)
+        ]
+        shape((49, 22, 76), hull)
+        shape(PURPLE, hull, 3)
+        shape((225, 145, 255), [
+            (0, 21), (-5, -6), (0, -17), (5, -6)
+        ])
+
+    elif kind == "e1":
+        for dx in (-8, 8):
+            shape(ORANGE, [
+                (dx - 3, -15), (dx, -23 - flame / 2),
+                (dx + 3, -15)
+            ])
+        shape((18, 65, 47), [
+            (-5, 13), (-32, -13), (-34, -20), (-12, -12),
+            (0, 2), (12, -12), (34, -20), (32, -13), (5, 13)
+        ])
+        hull = [
+            (0, 29), (-9, 12), (-11, -12), (-6, -21),
+            (6, -21), (11, -12), (9, 12)
+        ]
+        shape((25, 95, 67), hull)
+        shape(GREEN, hull, 2)
+        shape((85, 230, 190), [
+            (0, 15), (-5, 5), (-4, -5), (4, -5), (5, 5)
+        ])
+        for dx in (-25, 25):
+            stroke(SILVER, (dx, -12), (dx, -21), 3)
+
+    elif kind == "e2":
+        for dx in (-14, 14):
+            shape(ORANGE, [
+                (dx - 5, -17), (dx, -26 - flame / 2),
+                (dx + 5, -17)
+            ])
+        shape((90, 72, 28), [
+            (-8, 13), (-38, 4), (-39, -20), (-25, -16),
+            (-14, -6), (0, 0), (14, -6), (25, -16),
+            (39, -20), (38, 4), (8, 13)
+        ])
+        hull = [
+            (0, 30), (-10, 17), (-13, 2), (-10, -20),
+            (10, -20), (13, 2), (10, 17)
+        ]
+        shape((130, 103, 35), hull)
+        shape(YELLOW, hull, 3)
+        shape((255, 180, 70), [
+            (0, 19), (-6, 8), (-5, -3), (5, -3), (6, 8)
+        ])
+        for dx in (-29, 29):
+            stroke(SILVER, (dx, -5), (dx, 13), 4)
+
+    elif kind == "e3":
+        for dx in (-23, -9, 9, 23):
+            shape(ORANGE, [
+                (dx - 4, -19), (dx, -25 - flame / 2),
+                (dx + 4, -19)
+            ])
+        shape((82, 28, 39), [
+            (-10, 8), (-42, 13), (-46, 19), (-42, -13),
+            (-28, -20), (0, -9), (28, -20), (42, -13),
+            (46, 19), (42, 13), (10, 8)
+        ])
+        hull = [
+            (0, 32), (-12, 20), (-15, 1), (-12, -22),
+            (12, -22), (15, 1), (12, 20)
+        ]
+        shape((100, 30, 44), hull)
+        shape(RED, hull, 3)
+        shape((255, 125, 80), [
+            (0, 21), (-6, 9), (-6, -8), (6, -8), (6, 9)
+        ])
+        for dx in (-28, 28):
+            circle((65, 65, 78), dx, 0, 8)
+            circle(RED, dx, 0, 5)
+            stroke(SILVER, (dx, 0), (dx, 15), 4)
+
+    elif kind == "e4":
+        for dx in (-37, -14, 14, 37):
+            shape(ORANGE, [
+                (dx - 5, -22), (dx, -33 - flame / 2),
+                (dx + 5, -22)
+            ])
+        wings = [
+            (0, 15), (-19, 9), (-48, 22), (-57, 13),
+            (-51, -23), (-32, -29), (-12, -13), (0, -5),
+            (12, -13), (32, -29), (51, -23), (57, 13),
+            (48, 22), (19, 9)
+        ]
+        shape((27, 57, 76), wings)
+        shape(CYAN, wings, 3)
+        hull = [
+            (0, 38), (-14, 23), (-18, -3), (-13, -28),
+            (0, -38), (13, -28), (18, -3), (14, 23)
+        ]
+        shape((45, 80, 110), hull)
+        shape(SILVER, hull, 3)
+        for dx in (-37, 37):
+            circle((15, 26, 48), dx, 3, 10)
+            circle(CYAN, dx, 3, 6)
+            stroke(SILVER, (dx, 5), (dx, 22), 4)
+        shape(CYAN, [
+            (0, 22), (-7, 8), (-5, -10), (5, -10), (7, 8)
+        ])
+
+    elif kind == "boss":
+        for dx in (-43, -27, -11, 11, 27, 43):
+            shape(ORANGE, [
+                (dx - 5, -27), (dx, -36 - flame / 2),
+                (dx + 5, -27)
+            ])
+        shape((48, 29, 76), [
+            (-13, 17), (-61, 30), (-77, 14), (-70, -22),
+            (-46, -30), (0, -15), (46, -30), (70, -22),
+            (77, 14), (61, 30), (13, 17)
+        ])
+        hull = [
+            (0, 47), (-16, 32), (-25, 4), (-19, -30),
+            (-8, -42), (8, -42), (19, -30),
+            (25, 4), (16, 32)
+        ]
+        shape((58, 33, 88), hull)
+        shape(PURPLE, hull, 4)
+        shape(CYAN, [
+            (0, 25), (-6, 14), (-7, -4),
+            (0, -13), (7, -4), (6, 14)
+        ], 2)
+        for dx in (-43, 43):
+            circle((28, 28, 45), dx, 8, 12)
+            circle(RED, dx, 8, 8)
+            stroke(SILVER, (dx, 8), (dx, 29), 4)
+
+    elif kind == "giant":
+        hull_color = (
+            (40, 35, 78) if rage == 0
+            else (105, 19, 31) if rage == 1
+            else (145, 10, 20)
+        )
+        armor = (
+            (105, 85, 165) if rage == 0
+            else (205, 45, 50) if rage == 1
+            else (255, 35, 35)
+        )
+        glow = CYAN if rage == 0 else ORANGE if rage == 1 else YELLOW
+
+        for dx in (-55, -37, -19, 0, 19, 37, 55):
+            shape(ORANGE, [
+                (dx - 5, -35),
+                (dx, -44 - flame * (1.3 if rage == 2 else 0.8)),
+                (dx + 5, -35)
+            ])
+            circle(glow, dx, -35, 4)
+
+        shape(hull_color, [
+            (-12, 17), (-51, 31), (-78, 20), (-90, -12),
+            (-74, -33), (-40, -29), (-18, -13), (0, -3),
+            (18, -13), (40, -29), (74, -33), (90, -12),
+            (78, 20), (51, 31), (12, 17)
+        ])
+        shape(armor, [
+            (-18, 5), (-55, 18), (-75, 8),
+            (-75, -16), (-48, -22), (-24, -9)
+        ])
+        shape(armor, [
+            (18, 5), (55, 18), (75, 8),
+            (75, -16), (48, -22), (24, -9)
+        ])
+        hull = [
+            (0, 51), (-17, 36), (-24, 11), (-20, -31),
+            (-10, -44), (10, -44), (20, -31),
+            (24, 11), (17, 36)
+        ]
+        shape(hull_color, hull)
+        shape(armor, hull, 4)
+        shape(glow, [
+            (0, 27), (-5, 15), (-6, -7),
+            (0, -18), (6, -7), (5, 15)
+        ], 3)
+        for dx in (-65, -39, -13, 13, 39, 65):
+            circle((20, 23, 43), dx, 18, 9)
+            circle(armor, dx, 18, 7)
+            circle(glow, dx, 18, 4)
+            stroke(SILVER, (dx, 18), (dx, 37), 4)
+
+        if rage == 2:
+            circle(RED, 0, 3, 62, 2)
+
+
+def draw_bullet(b):
+    pos = b["pos"]
+    direction = b["dir"]
+    side = V(-direction.y, direction.x)
+    kind = b["kind"]
+
+    if kind == "solo":
+        for dx in (-5, 5):
+            mid = pos + side * dx
+            line(BLUE, mid - direction * 13, mid + direction * 13, 5)
+            line(WHITE, mid - direction * 10, mid + direction * 10, 2)
+
+    elif kind == "p1":
+        poly(GREEN, [
+            pos + direction * 20, pos + side * 8,
+            pos - direction * 14, pos - side * 8
+        ])
+
+    elif kind == "p2":
+        line(PURPLE, pos - direction * 19, pos + direction * 19, 9)
+        line(WHITE, pos - direction * 12, pos + direction * 12, 3)
+
+    else:
+        color = {
+            "e1": RED, "e2": YELLOW, "e3": ORANGE,
+            "e4": CYAN, "boss": PURPLE, "giant": RED
+        }.get(kind, RED)
+        line(color, pos - direction * 13, pos + direction * 13, 7)
+        pygame.draw.circle(screen, WHITE, ip(pos), 3)
+
+
+def draw_rocket(r, now):
+    pos, direction = r["pos"], r["dir"]
+    side = V(-direction.y, direction.x)
+    poly(ORANGE, [
+        pos - direction * 12 + side * 5,
+        pos - direction * (26 + 4 * math.sin(now / 60)),
+        pos - direction * 12 - side * 5
+    ])
+    poly(SILVER, [
+        pos + direction * 18,
+        pos + side * 6,
+        pos - direction * 12 + side * 6,
+        pos - direction * 12 - side * 6,
+        pos - side * 6
+    ])
+    poly(RED, [
+        pos + direction * 18,
+        pos + side * 5,
+        pos - side * 5
+    ])
+
+
+# ============================================================
+# SPIELZUSTAND
+# ============================================================
+
+mode = "main"
+hard = False
+mouse_modes = {"main": True, "medium": True, "easy": True}
+state = "intro"
+intro_start = pygame.time.get_ticks()
+language_from_pause = False
+settings_from_pause = False
+preview_until = 0
+upgrade_choices = []
+upgrade_pending = False
+upgrade_selected = -1
+upgrade_selected_at = 0
+run_stats = {}
+combo = 0
+combo_until = 0
+training_wave = 1
+training_unlocked = 1
+training_mode = False
+finale_start = 0
+achievement_notice = []
+SAVE_FILE = Path.home() / ".starfall_wmb_records.json"
+
+def load_records():
+    try:
+        data = json.loads(SAVE_FILE.read_text(encoding="utf-8"))
+        return {"highscores": data.get("highscores", {}), "achievements": data.get("achievements", []), "training_unlocked": max(1, min(10, int(data.get("training_unlocked", 1)))), "minibosses": data.get("minibosses", []), "mini_kills": data.get("mini_kills", {}), "skins": data.get("skins", ["classic"]), "skin": data.get("skin", "classic")}
+    except (OSError, ValueError, TypeError):
+        return {"highscores": {}, "achievements": [], "training_unlocked": 1, "minibosses": [], "mini_kills": {}, "skins": ["classic"], "skin": "classic"}
+
+records = load_records()
+records["skins"] = list(set(records["skins"] + ["classic"]))
+if records["skin"] not in records["skins"]: records["skin"] = "classic"
+training_unlocked = records["training_unlocked"]
+
+# Five distinct rare mini-bosses per wave: 50 entries in the index.
+MINI_NAMES = ("PHANTOM", "NOVA", "VIPER", "TITAN", "ECLIPSE")
+SKIN_COLORS = {"classic": CYAN, "nebula": PURPLE, "solar": ORANGE,
+               "emerald": GREEN, "frost": (145, 225, 255), "legend": YELLOW}
+INDEX_TEXT = {
+ "de": {"index":"MINIBOSS-INDEX", "wave":"WELLE", "unknown":"UNBEKANNT", "defeated":"BESIEGT", "skin":"SKIN", "choose":"SKIN WÄHLEN", "all":"ALLE 50 BESIEGT: LEGENDEN-SKIN!", "hint":"Links: Welle wählen · Rechts: Einträge · Klick auf Skin: ausrüsten", "mystery":"GEHEIMER SKIN!", "stage":"WELLE ABGESCHLOSSEN: SKIN FREI!", "locked":"GESPERRT", "stats":"STATISTIK", "accuracy":"TREFFERQUOTE", "kills":"ABSCHÜSSE", "bestcombo":"BESTE KOMBO", "specials":"SPEZIALS"},
+ "en": {"index":"MINI-BOSS INDEX", "wave":"WAVE", "unknown":"UNKNOWN", "defeated":"DEFEATED", "skin":"SKIN", "choose":"SELECT SKIN", "all":"ALL 50 DEFEATED: LEGEND SKIN!", "hint":"Left: select wave · Right: entries · Click a skin to equip", "mystery":"MYSTERY SKIN!", "stage":"WAVE COMPLETE: SKIN UNLOCKED!", "locked":"LOCKED", "stats":"STATISTICS", "accuracy":"ACCURACY", "kills":"KILLS", "bestcombo":"BEST COMBO", "specials":"SPECIALS"},
+ "fr": {"index":"INDEX DES MINI-BOSS", "wave":"VAGUE", "unknown":"INCONNU", "defeated":"VAINCU", "skin":"APPARENCE", "choose":"CHOISIR L’APPARENCE", "all":"LES 50 VAINCUS : APPARENCE LÉGENDE !", "hint":"Gauche : vague · Droite : entrées · Clique sur une apparence", "mystery":"APPARENCE MYSTÈRE !", "stage":"VAGUE TERMINÉE : APPARENCE DÉBLOQUÉE !", "locked":"VERROUILLÉ", "stats":"STATISTIQUES", "accuracy":"PRÉCISION", "kills":"ENNEMIS VAINCUS", "bestcombo":"MEILLEUR COMBO", "specials":"SPÉCIAUX"},
+ "it": {"index":"INDICE MINI-BOSS", "wave":"ONDATA", "unknown":"SCONOSCIUTO", "defeated":"SCONFITTO", "skin":"LIVREA", "choose":"SCEGLI LIVREA", "all":"TUTTI I 50 SCONFITTI: LIVREA LEGGENDARIA!", "hint":"Sinistra: ondata · Destra: schede · Clicca una livrea", "mystery":"LIVREA MISTERIOSA!", "stage":"ONDATA COMPLETATA: LIVREA SBLOCCATA!", "locked":"BLOCCATO", "stats":"STATISTICHE", "accuracy":"PRECISIONE", "kills":"NEMICI SCONFITTI", "bestcombo":"COMBO MIGLIORE", "specials":"SPECIALI"}}
+for _lang, _new in {
+ "de": {"spawn":"MINIBOSS-CHANCE PRO VERSUCH: %d %%", "index_hint":"Besiegte Minibosse schalten ihre Skins frei", "wardrobe":"GARDEROBE", "wardrobe_hint":"Klicke einen freigeschalteten Skin zum Ausrüsten", "previous":"ZURÜCK", "next":"WEITER", "individual_chance":"SPAWN-CHANCE: %.0f %%"},
+ "en": {"spawn":"MINI-BOSS CHANCE PER ATTEMPT: %d %%", "index_hint":"Defeat mini-bosses to unlock their skins", "wardrobe":"WARDROBE", "wardrobe_hint":"Click an unlocked skin to equip it", "previous":"PREVIOUS", "next":"NEXT", "individual_chance":"SPAWN CHANCE: %.0f %%"},
+ "fr": {"spawn":"CHANCE DE MINI-BOSS PAR ESSAI : %d %%", "index_hint":"Bats les mini-boss pour débloquer leurs apparences", "wardrobe":"GARDE-ROBE", "wardrobe_hint":"Clique sur une apparence débloquée pour l’équiper", "previous":"PRÉCÉDENT", "next":"SUIVANT", "individual_chance":"CHANCE D’APPARITION : %.0f %%"},
+ "it": {"spawn":"PROBABILITÀ MINI-BOSS PER TENTATIVO: %d %%", "index_hint":"Sconfiggi i mini-boss per sbloccare le livree", "wardrobe":"GUARDAROBA", "wardrobe_hint":"Clicca una livrea sbloccata per equipaggiarla", "previous":"PRECEDENTE", "next":"SUCCESSIVO", "individual_chance":"PROBABILITÀ: %.0f %%"}
+}.items():
+    INDEX_TEXT[_lang].update(_new)
+
+# The mystery pickup is also passed to announce() and must exist in every language.
+for _lang, _label in {
+    "de": "GEHEIMER SKIN", "en": "MYSTERY SKIN",
+    "fr": "APPARENCE MYSTÈRE", "it": "LIVREA MISTERIOSA",
+}.items():
+    LANG[_lang]["mystery_skin"] = _label
+# Names and attack patterns are revealed only after the first defeat.
+MINI_ATTACKS = {
+ "de": ("Dreifach-Fächer", "Fünfer-Salve", "Schneller Doppelschuss", "Breiter Fächer", "Kreuzschüsse"),
+ "en": ("Triple spread", "Five-shot burst", "Fast double shot", "Wide spread", "Crossfire"),
+ "fr": ("Éventail triple", "Salve de cinq", "Double tir rapide", "Large éventail", "Tirs croisés"),
+ "it": ("Ventaglio triplo", "Raffica da cinque", "Doppio colpo rapido", "Ventaglio ampio", "Fuoco incrociato"),
+}
+for _lang, _labels in {
+ "de": {"defeat_count":"SIEGE: %d", "attack_label":"ANGRIFF: %s", "preview":"SKIN-VORSCHAU", "equipped":"AUSGERÜSTET", "preview_hint":"Vorschau: Aussehen, Schild und Schüsse · Angriffe bleiben gleich"},
+ "en": {"defeat_count":"DEFEATS: %d", "attack_label":"ATTACK: %s", "preview":"SKIN PREVIEW", "equipped":"EQUIPPED", "preview_hint":"Preview: appearance, shield and shots · weapons stay the same"},
+ "fr": {"defeat_count":"VICTOIRES : %d", "attack_label":"ATTAQUE : %s", "preview":"APERÇU DE L’APPARENCE", "equipped":"ÉQUIPÉ", "preview_hint":"Aperçu : apparence, bouclier et tirs · armes inchangées"},
+ "it": {"defeat_count":"VITTORIE: %d", "attack_label":"ATTACCO: %s", "preview":"ANTEPRIMA LIVREA", "equipped":"EQUIPAGGIATA", "preview_hint":"Anteprima: aspetto, scudo e colpi · armi invariate"},
+}.items():
+    INDEX_TEXT[_lang].update(_labels)
+index_wave = 1
+mini_spawn_at = 0
+mini_spawned = False
+mini_notice = None
+MINI_VARIANT_CHANCES = (0.25, 0.20, 0.15, 0.10, 0.05)  # Per attempt, in index order
+MINI_SPAWN_CHANCE = sum(MINI_VARIANT_CHANCES)  # 75% total per attempt
+MINI_SPAWN_LIMIT = 2  # The same variant may return, even within one wave
+
+def ix(key):
+    return INDEX_TEXT[language][key]
+
+def unlock_skin(skin, message=True):
+    global mini_notice
+    if training_mode or mode == "duel" or skin in records["skins"]:
+        return
+    records["skins"].append(skin)
+    if message:
+        mini_notice = (ix("mystery") + " " + skin.upper(), game_time + 3600)
+    sound("power")
+    save_records()
+
+def mark_miniboss(e):
+    global mini_notice
+    if training_mode or mode == "duel":
+        return
+    key = "%s:%s" % (e["mini_wave"], e["mini_variant"])
+    records.setdefault("mini_kills", {})[key] = records.get("mini_kills", {}).get(key, 0) + 1
+    save_records()
+    unlock_skin("mini_%s_%s" % (e["mini_wave"], e["mini_variant"]), False)
+    if key not in records["minibosses"]:
+        records["minibosses"].append(key)
+        count = sum(k.startswith(str(e["mini_wave"]) + ":") for k in records["minibosses"])
+        if count == 5:
+            unlock_skin("wave_%d" % e["mini_wave"], False)
+            mini_notice = (ix("stage"), game_time + 4200)
+        if len(records["minibosses"]) >= 50:
+            unlock_skin("legend", False)
+            mini_notice = (ix("all"), game_time + 5000)
+        save_records()
+
+def spawn_rare_miniboss(now):
+    global mini_spawned, mini_spawn_at
+    if now < mini_spawn_at or not enemies or mini_spawned >= MINI_SPAWN_LIMIT:
+        return
+    mini_spawn_at = now + random.randint(7500, 11500)
+    # Each attempt has the displayed probability; variants can appear repeatedly.
+    roll = random.random()
+    variant = None
+    cumulative = 0.0
+    for candidate, probability in enumerate(MINI_VARIANT_CHANCES):
+        cumulative += probability
+        if roll < cumulative:
+            variant = candidate
+            break
+    if variant is None:
+        return
+    mini_spawned += 1
+    e = new_enemy(random.randint(145, W-145), 115, 4 + wave * 2 + variant, "e4")
+    e["mini_wave"] = wave  # The miniboss belongs exclusively to the current wave.
+    e["mini_variant"] = variant
+    e["speed"] = 42 + wave * 4 + variant * 2
+    e["next_shot"] = now + 1300
+    enemies.append(e)
+    sparks(e["pos"], (PURPLE, CYAN, ORANGE, RED, YELLOW)[variant], 24, 135)
+    sound("probe_launch")
+
+
+def save_records():
+    try:
+        SAVE_FILE.write_text(json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError:
+        pass
+
+def unlock_achievement(key):
+    if training_mode:
+        return
+    if key not in records["achievements"]:
+        records["achievements"].append(key)
+        achievement_notice.append((key, game_time + 3300))
+        save_records()
+
+def update_records():
+    if mode == "duel" or training_mode:
+        return
+    key = mode + ("_hard" if hard else "")
+    if points > records["highscores"].get(key, 0):
+        records["highscores"][key] = points
+        save_records()
+
+UPGRADES = ("fire", "rocket", "shield", "special", "power", "rocket_speed", "shield_time", "magnet_range")
+UPGRADE_COLORS = {"fire": CYAN, "rocket": ORANGE, "shield": BLUE, "special": PURPLE, "power": GREEN, "rocket_speed": YELLOW, "shield_time": CYAN, "magnet_range": PURPLE}
+UPGRADE_LABELS = {
+ "de": {"fire":"SCHNELLER SCHIESSEN", "rocket":"RAKETEN SCHNELLER LADEN", "shield":"SCHILD SCHNELLER LADEN", "special":"SPEZIAL SCHNELLER LADEN", "power":"POWER-UPS HALTEN LÄNGER", "rocket_speed":"SCHNELLERE RAKETEN", "shield_time":"LÄNGERER SCHILD", "magnet_range":"STÄRKERER MAGNET", "choose":"WÄHLE EINE VERBESSERUNG", "pick":"Klicke eine Karte oder drücke 1, 2 oder 3", "records":"REKORDE & ERFOLGE", "highscore":"HIGHSCORE", "achievements":"ERFOLGE", "back":"ESC: ZURÜCK"},
+ "en": {"fire":"FASTER FIRING", "rocket":"FASTER ROCKET RELOAD", "shield":"FASTER SHIELD RECHARGE", "special":"FASTER SPECIAL RECHARGE", "power":"LONGER POWER-UPS", "rocket_speed":"FASTER ROCKETS", "shield_time":"LONGER SHIELD", "magnet_range":"STRONGER MAGNET", "choose":"CHOOSE AN UPGRADE", "pick":"Click a card or press 1, 2 or 3", "records":"RECORDS & ACHIEVEMENTS", "highscore":"HIGH SCORE", "achievements":"ACHIEVEMENTS", "back":"ESC: BACK"},
+ "fr": {"fire":"TIR PLUS RAPIDE", "rocket":"RECHARGE ROQUETTE", "shield":"RECHARGE BOUCLIER", "special":"RECHARGE SPÉCIALE", "power":"BONUS PLUS LONGS", "rocket_speed":"ROQUETTES PLUS RAPIDES", "shield_time":"BOUCLIER PLUS LONG", "magnet_range":"AIMANT PLUS PUISSANT", "choose":"CHOISIS UNE AMÉLIORATION", "pick":"Clique ou appuie sur 1, 2 ou 3", "records":"RECORDS ET SUCCÈS", "highscore":"MEILLEUR SCORE", "achievements":"SUCCÈS", "back":"ESC : RETOUR"},
+ "it": {"fire":"SPARO PIÙ RAPIDO", "rocket":"RICARICA MISSILI", "shield":"RICARICA SCUDO", "special":"RICARICA SPECIALE", "power":"BONUS PIÙ LUNGHI", "rocket_speed":"MISSILI PIÙ VELOCI", "shield_time":"SCUDO PIÙ LUNGO", "magnet_range":"MAGNETE PIÙ FORTE", "choose":"SCEGLI UN POTENZIAMENTO", "pick":"Clicca o premi 1, 2 o 3", "records":"RECORD E OBIETTIVI", "highscore":"RECORD", "achievements":"OBIETTIVI", "back":"ESC: INDIETRO"}
+}
+ACHIEVEMENTS = {"first":"FIRST CONTACT", "five":"HALFWAY THERE", "boss":"BOSS BREAKER", "win":"STARFALL CHAMPION", "score":"10,000 POINTS", "upgrades":"FULLY UPGRADED", "combo":"COMBO PILOT", "no_rockets":"NO ROCKETS NEEDED"}
+EXTRA_TEXT = {
+ "de":{"training":"TRAINING", "training_wave":"TRAININGSWELLE", "training_hint":"← / →: Welle wählen · ENTER: Start · ESC: Zurück", "combo":"KOMBO", "victory_stats":"DEIN SIEGESBERICHT", "upgrades_used":"VERBESSERUNGEN", "best":"BESTWERT", "training_note":"Training: keine Rekorde oder Erfolge", "phase":"BOSSPHASE", "no_rockets":"OHNE RAKETEN", "achievement_combo":"KOMBO-PILOT", "achievement_no_rockets":"OHNE RAKETEN GESCHAFFT"},
+ "en":{"training":"TRAINING", "training_wave":"TRAINING WAVE", "training_hint":"← / →: choose wave · ENTER: start · ESC: back", "combo":"COMBO", "victory_stats":"YOUR VICTORY REPORT", "upgrades_used":"UPGRADES", "best":"BEST SCORE", "training_note":"Training: no records or achievements", "phase":"BOSS PHASE", "no_rockets":"NO ROCKETS", "achievement_combo":"COMBO PILOT", "achievement_no_rockets":"NO ROCKETS NEEDED"},
+ "fr":{"training":"ENTRAÎNEMENT", "training_wave":"VAGUE D’ENTRAÎNEMENT", "training_hint":"← / → : choisir · ENTRÉE : jouer · ESC : retour", "combo":"COMBO", "victory_stats":"BILAN DE VICTOIRE", "upgrades_used":"AMÉLIORATIONS", "best":"MEILLEUR SCORE", "training_note":"Entraînement : aucun record ni succès", "phase":"PHASE DU BOSS", "no_rockets":"SANS ROQUETTES", "achievement_combo":"PILOTE COMBO", "achievement_no_rockets":"SANS ROQUETTES"},
+ "it":{"training":"ALLENAMENTO", "training_wave":"ONDATA DI ALLENAMENTO", "training_hint":"← / →: scegli · INVIO: avvia · ESC: indietro", "combo":"COMBO", "victory_stats":"RIEPILOGO VITTORIA", "upgrades_used":"POTENZIAMENTI", "best":"PUNTEGGIO MIGLIORE", "training_note":"Allenamento: niente record o obiettivi", "phase":"FASE DEL BOSS", "no_rockets":"SENZA MISSILI", "achievement_combo":"PILOTA COMBO", "achievement_no_rockets":"SENZA MISSILI"}}
+ACHIEVEMENT_TEXT = {
+ "de":("ERSTER KONTAKT","HALBZEIT","BOSS-BESIEGER","STARFALL-CHAMPION","10.000 PUNKTE","VOLL AUFGERÜSTET"),
+ "en":("FIRST CONTACT","HALFWAY THERE","BOSS BREAKER","STARFALL CHAMPION","10,000 POINTS","FULLY UPGRADED"),
+ "fr":("PREMIER CONTACT","À MI-PARCOURS","BRISEUR DE BOSS","CHAMPION STARFALL","10 000 POINTS","TOUT AMÉLIORÉ"),
+ "it":("PRIMO CONTATTO","A METÀ STRADA","SPEZZA-BOSS","CAMPIONE STARFALL","10.000 PUNTI","POTENZIAMENTO COMPLETO")}
+def extra(key):
+    return EXTRA_TEXT[language][key]
+def achievement_name(key):
+    if key == "combo": return extra("achievement_combo")
+    if key == "no_rockets": return extra("achievement_no_rockets")
+    return ACHIEVEMENT_TEXT[language][list(ACHIEVEMENTS).index(key)]
+
+def upgrade_label(key):
+    return UPGRADE_LABELS[language][key]
+
+def choose_upgrade(index):
+    global upgrade_selected, upgrade_selected_at
+    if not upgrade_pending or upgrade_selected >= 0 or not 0 <= index < len(upgrade_choices):
+        return
+    # Erst die sichtbare Druck- und Funkenanimation abspielen.
+    upgrade_selected = index
+    upgrade_selected_at = game_time
+    sound("power")
+
+
+def finish_upgrade_animation():
+    global upgrade_pending, preview_until, upgrade_selected
+    if not upgrade_pending or upgrade_selected < 0 or game_time - upgrade_selected_at < 720:
+        return
+    key = upgrade_choices[upgrade_selected]
+    for p in players():
+        if p:
+            p["upgrades"][key] += 1
+    run_stats["upgrades"] = run_stats.get("upgrades", 0) + 1
+    if run_stats["upgrades"] >= 5:
+        unlock_achievement("upgrades")
+    upgrade_pending = False
+    upgrade_choices.clear()
+    upgrade_selected = -1
+    preview_until = game_time + 2700
+
+player = None
+p1 = None
+p2 = None
+
+player_bullets = []
+enemy_bullets = []
+duel_bullets = []
+player_rockets = []
+enemy_rockets = []
+enemies = []
+powerups = []
+probes = []
+beams = []
+probe_attacks = {}
+
+attack_counter = 0
+points = 0
+wave = 1
+MAX_WAVES = 10
+game_time = 0
+paused = False
+show_help = False
+game_over = False
+victory = False
+duel_result = ""
+transition_until = 0
+transition_text = ""
+
+
+def players():
+    return [p1, p2] if mode in ("duel", "coop") else [player]
+
+
+def nearest_player(pos):
+    available = [p for p in players() if p and p["hp"] > 0]
+    if not available:
+        return None
+    return min(available, key=lambda p: (p["pos"] - pos).length_squared())
+
+
+def new_player(x, y, facing, hp, kind):
+    return {
+        "pos": V(x, y), "facing": facing,
+        "hp": hp, "max_hp": hp, "kind": kind,
+        "shot_at": -100000, "rocket_at": -100000,
+        "shield_at": -100000, "special_at": -100000,
+        "shield_until": 0, "invuln_until": 0,
+        "rocket_was_ready": True, "special_was_ready": True,
+        "ring_flashes": [],
+        "triple_until": 0, "rapid_until": 0,
+        "side_until": 0, "magnet_until": 0,
+        "dash_until": 0, "dash_dir": 0,
+        "streak": 0, "turbo": False,
+        "upgrades": {name: 0 for name in UPGRADES}
+    }
+
+
+def new_bullet(pos, direction, speed, kind, owner=None, damage=1):
+    direction = V(direction)
+    if direction.length_squared() == 0:
+        direction = V(0, -1)
+    return {
+        "pos": V(pos), "dir": direction.normalize(),
+        "speed": speed, "kind": kind,
+        "owner": owner, "damage": damage
+    }
+
+
+def shot_cooldown(p, now):
+    delay = 380 if mode in ("duel", "coop") else 420
+    if mode == "duel" and p["turbo"]:
+        delay *= 0.65
+    if now < p["rapid_until"]:
+        delay *= 0.52
+    return max(115, int(delay * (0.91 ** p["upgrades"]["fire"])))
+
+
+def shield_cooldown(p):
+    return int((15000 if mode == "duel" and p["turbo"] else 20000) * (0.87 ** p["upgrades"]["shield"]))
+
+
+def rocket_cooldown(p):
+    return int((12000 if mode == "duel" and p["turbo"] else 16000) * (0.87 ** p["upgrades"]["rocket"]))
+
+
+def activate_shield(p, now):
+    if p["hp"] <= 0 or now - p["shield_at"] < shield_cooldown(p):
+        return
+    p["shield_at"] = now
+    p["shield_until"] = now + int((4000 if mode == "duel" else 2000) * (1 + 0.22 * p["upgrades"]["shield_time"]))
+    add_ring(p["pos"], CYAN)
+    sparks(p["pos"], CYAN, 12, 100)
+
+
+def hit_player(p, now):
+    global shake
+
+    if (
+        p["hp"] <= 0
+        or now < p["shield_until"]
+        or now < p["invuln_until"]
+    ):
+        return False
+
+    global combo, combo_until
+    combo = 0
+    combo_until = 0
+    p["hp"] -= 1
+    p["invuln_until"] = now + 1000
+    p["streak"] = 0
+    p["turbo"] = False
+    sound("hit")
+    sparks(p["pos"], CYAN, 22, 170)
+    add_ring(p["pos"], RED, 70)
+    shake = max(shake, 6)
+
+    if p["hp"] <= 0:
+        explosion(p["pos"], CYAN, True)
+
+    return True
+
+
+def fire_player(p, owner, now, target=None):
+    if p["hp"] <= 0 or now - p["shot_at"] < shot_cooldown(p, now):
+        return
+    run_stats["shots"] = run_stats.get("shots", 0) + 1
+
+    direction = (
+        V(0, p["facing"])
+        if target is None else V(target) - p["pos"]
+    )
+    if direction.length_squared() == 0:
+        direction = V(0, p["facing"])
+
+    direction = direction.normalize()
+    angle = math.atan2(direction.y, direction.x)
+    angles = (
+        (-0.18, 0, 0.18)
+        if now < p["triple_until"] else (0,)
+    )
+    destination = duel_bullets if mode == "duel" else player_bullets
+
+    for offset in angles:
+        d = V(math.cos(angle + offset), math.sin(angle + offset))
+        destination.append(
+            new_bullet(
+                p["pos"] + d * 34, d,
+                700 if p["kind"] == "solo" else 610,
+                p["kind"], owner
+            )
+        )
+
+    if now < p["side_until"] and mode != "duel":
+        # Zwei zusätzliche seitliche Schüsse, ohne die Boss-Spezialregel zu ändern.
+        for side_angle in (-0.70, 0.70):
+            side_dir = direction.rotate_rad(side_angle)
+            destination.append(new_bullet(
+                p["pos"] + side_dir * 28, side_dir,
+                610, p["kind"], owner
+            ))
+
+    p["shot_at"] = now
+    sound("shot")
+    sparks(p["pos"] + direction * 30, CYAN, 3, 45)
+
+
+def fire_player_rocket(p, owner, now):
+    if p["hp"] <= 0 or now - p["rocket_at"] < rocket_cooldown(p):
+        return
+
+    direction = V(0, p["facing"])
+    player_rockets.append({
+        "pos": p["pos"] + direction * 38,
+        "dir": direction,
+        "speed": (430 if mode == "duel" and p["turbo"] else 330) * (1 + 0.15 * p["upgrades"]["rocket_speed"]),
+        "owner": owner,
+        "start": now
+    })
+    p["rocket_at"] = now
+    run_stats["rockets"] = run_stats.get("rockets", 0) + 1
+    sound("rocket")
+
+
+def special_cooldown(p):
+    return int(12000 * (0.87 ** p["upgrades"]["special"]))
+
+
+def activate_special(p, now):
+    if p["hp"] <= 0 or now - p["special_at"] < special_cooldown(p):
+        return
+    run_stats["specials"] = run_stats.get("specials", 0) + 1
+
+    p["special_at"] = now
+    sound("special")
+
+    if p["kind"] == "solo":
+        special_id = (id(p), now)
+        for dx in range(-90, 91, 18):
+            special_bullet = new_bullet(
+                p["pos"] + V(dx, -32), (0, -1),
+                830, "solo", "solo", 2
+            )
+            special_bullet["special_id"] = special_id
+            player_bullets.append(special_bullet)
+        add_ring(p["pos"], BLUE, 125)
+        sparks(p["pos"], CYAN, 35, 210)
+
+    elif p["kind"] == "p1":
+        p["shield_until"] = max(p["shield_until"], now + 2400)
+        p["invuln_until"] = max(p["invuln_until"], now + 2400)
+        add_ring(p["pos"], GREEN, 165)
+        sparks(p["pos"], GREEN, 35, 220)
+
+        hostile = duel_bullets if mode == "duel" else enemy_bullets
+        for b in hostile[:]:
+            if (
+                (mode != "duel" or b["owner"] == "bottom")
+                and (b["pos"] - p["pos"]).length() < 170
+            ):
+                hostile.remove(b)
+
+        if mode != "duel":
+            for r in enemy_rockets[:]:
+                if (r["pos"] - p["pos"]).length() < 170:
+                    enemy_rockets.remove(r)
+
+    else:
+        keys = pygame.key.get_pressed()
+        p["dash_dir"] = -1 if keys[pygame.K_a] else 1
+        p["dash_until"] = now + 230
+        p["invuln_until"] = max(p["invuln_until"], now + 430)
+        add_ring(p["pos"], PURPLE)
+        sparks(p["pos"], PURPLE, 28, 200)
+
+
+def draw_player(p, now):
+    if p["hp"] <= 0:
+        return
+
+    if now >= p["invuln_until"] or (now // 90) % 2 == 0:
+        # A selected wardrobe skin replaces the visible hull only. Player kind,
+        # weapons, hitbox, cooldowns and all other gameplay remain unchanged.
+        draw_equipped_player_ship(p, now)
+        upgrades = p["upgrades"]
+        if upgrades["rocket_speed"]:
+            flame = 17 + min(22, upgrades["rocket_speed"] * 5) + 5 * abs(math.sin(now / 110))
+            tail = p["pos"] - V(0, p["facing"] * 27)
+            pygame.draw.line(screen, ORANGE, ip(tail), ip(tail - V(0, p["facing"] * flame)), 4)
+            pygame.draw.circle(screen, YELLOW, ip(tail), 4)
+        if upgrades["fire"]:
+            glow = GREEN if upgrades["fire"] >= 3 else CYAN
+            for dx in (-22, 22):
+                pygame.draw.circle(screen, glow, ip(p["pos"] + V(dx, -p["facing"] * 7)), 3 + min(3, upgrades["fire"]))
+        if upgrades["shield"] or upgrades["shield_time"]:
+            for ring_i in range(min(3, upgrades["shield"] + upgrades["shield_time"])):
+                radius = 38 + ring_i * 4 + int(2 * math.sin(now / 250 + ring_i))
+                pygame.draw.arc(screen, BLUE, (p["pos"].x-radius, p["pos"].y-radius, radius*2, radius*2), 0.15, 2.8, 1)
+
+    # Readiness transitions are tracked independently for each player. The first
+    # frame does not flash because new players start with both weapons ready.
+    rocket_ready = now - p["rocket_at"] >= rocket_cooldown(p)
+    special_ready = now - p["special_at"] >= special_cooldown(p)
+    if rocket_ready and not p["rocket_was_ready"]:
+        p["ring_flashes"].append((now, ORANGE))
+    if special_ready and not p["special_was_ready"]:
+        p["ring_flashes"].append((now, PURPLE))
+    p["rocket_was_ready"] = rocket_ready
+    p["special_was_ready"] = special_ready
+    p["ring_flashes"] = [(started, color) for started, color in p["ring_flashes"]
+                         if now - started < 760]
+
+    radius = 44
+    center = p["pos"]
+    # Two brief flashes, with the normal shield indicator between them.
+    flash_color = None
+    for started, color in p["ring_flashes"]:
+        elapsed = now - started
+        if (0 <= elapsed < 165) or (310 <= elapsed < 475):
+            flash_color = color
+
+    if now < p["shield_until"]:
+        pygame.draw.circle(screen, flash_color or CYAN, ip(center), radius + 1,
+                           3 + min(3, p["upgrades"]["shield_time"]))
+        return
+
+    progress = clamp((now - p["shield_at"]) / shield_cooldown(p), 0, 1)
+    color = flash_color or BLUE
+    if progress < 1:
+        # An arc fills clockwise as the shield recharges.
+        segments = max(0, int(64 * progress))
+        for i in range(segments):
+            a = -math.pi / 2 + i * math.tau / 64
+            b = a + math.tau / 64 * 0.90
+            line(color, center + V(math.cos(a), math.sin(a)) * radius,
+                 center + V(math.cos(b), math.sin(b)) * radius, 3)
+    else:
+        # Fully charged: slowly rotating dashed blue ring.
+        for i in range(16):
+            a = -math.pi / 2 + now / 2200 + i * math.tau / 16
+            b = a + math.tau / 16 * 0.55
+            line(color, center + V(math.cos(a), math.sin(a)) * radius,
+                 center + V(math.cos(b), math.sin(b)) * radius, 3)
+
+
+# ============================================================
+# GEGNER, WELLEN UND POWER-UPS
+# ============================================================
+
+def new_enemy(x, y, hp, kind):
+    if kind == "giant":
+        actual_hp = 10
+    else:
+        reduction = {
+            "main": 0, "medium": 1, "easy": 2, "coop": 0
+        }.get(mode, 0)
+        actual_hp = max(1, hp - reduction)
+
+    return {
+        "pos": V(x, y), "base_y": float(y),
+        "hp": actual_hp, "max_hp": actual_hp,
+        "kind": kind, "direction": random.choice((-1, 1)),
+        "speed": random.uniform(35, 75),
+        "phase": random.uniform(0, math.tau),
+        "next_shot": game_time + random.randint(1100, 6200),
+        "shield_until": 0,
+        "attack_until": 0,
+        "next_attack": game_time + random.randint(2500, 6500),
+        "ram_until": 0,
+        "next_probe": game_time + random.randint(5500, 9000),
+        "rage_announced": 0,
+        "next_summon": game_time + 13500,
+        "next_rockets": game_time + 6500,
+        "next_double": game_time + 1500,
+        "second_shot_at": 0,
+        "second_target": None,
+        "special_hits": set(),
+        "formation_index": None, "dodge_until": 0,
+        "salvo_remaining": 0, "salvo_at": 0,
+        "salvo_target": None
+    }
+
+
+def rage_level(e):
+    return 2 if e["hp"] <= 3 else 1 if e["hp"] <= 5 else 0
+
+
+def clear_boss_attacks():
+    probes.clear()
+    beams.clear()
+    enemy_rockets.clear()
+    probe_attacks.clear()
+
+
+# Seltene Wellenereignisse; keine externen Grafiken oder Audiodateien nötig.
+wave_event = None
+wave_event_next = 0
+wave_event_used = set()
+wave_hazards = []
+bonus_drone = None
+wave_event_banner = None
+EVENT_NAMES = {
+    "de": {"asteroids": "ASTEROIDENFELD", "meteors": "METEORSCHAUER",
+           "reinforcements": "VERSTÄRKUNG", "interference": "ENERGIE-STÖRUNG",
+           "drone": "BONUS-DROHNE", "warning": "ACHTUNG", "bonus": "BONUS!"},
+    "en": {"asteroids": "ASTEROID FIELD", "meteors": "METEOR SHOWER",
+           "reinforcements": "REINFORCEMENTS", "interference": "ENERGY INTERFERENCE",
+           "drone": "BONUS DRONE", "warning": "WARNING", "bonus": "BONUS!"},
+    "fr": {"asteroids": "CHAMP D'ASTÉROÏDES", "meteors": "PLUIE DE MÉTÉORES",
+           "reinforcements": "RENFORTS", "interference": "PERTURBATION D'ÉNERGIE",
+           "drone": "DRONE BONUS", "warning": "ATTENTION", "bonus": "BONUS !"},
+    "it": {"asteroids": "CAMPO DI ASTEROIDI", "meteors": "PIOGGIA DI METEORE",
+           "reinforcements": "RINFORZI", "interference": "INTERFERENZA ENERGETICA",
+           "drone": "DRONE BONUS", "warning": "ATTENZIONE", "bonus": "BONUS!"}
+}
+
+
+def event_label(key):
+    return EVENT_NAMES.get(language, EVENT_NAMES["en"]).get(key, key)
+
+
+def reset_wave_events():
+    global wave_event, wave_event_next, bonus_drone, wave_event_banner
+    wave_event = None
+    wave_event_next = game_time + random.randint(10500, 15500)
+    wave_event_used.clear()
+    wave_hazards.clear()
+    bonus_drone = None
+    wave_event_banner = None
+
+
+def start_random_event(now):
+    global wave_event, wave_event_banner
+    options = [name for name in EVENT_NAMES["en"] if name not in ("warning", "bonus")
+               and name not in wave_event_used]
+    if not options:
+        return
+    name = random.choice(options)
+    wave_event_used.add(name)
+    wave_event = {"name": name, "warn_until": now + 1900,
+                  "end": now + (10500 if name == "interference" else 9000),
+                  "spawn_at": now + 2000, "spawned": False}
+    wave_event_banner = (name, now + 3000)
+    sound("probe_launch")
+
+
+def draw_rock_meteor(h):
+    """Rotierender, unregelmäßiger Fels mit geschichtetem Feuerschweif."""
+    x, y = h["pos"]
+    radius = h["radius"]
+    angle = h["phase"] * h["spin"]
+    outline = h["outline"]
+    def rock_points(scale=1.0):
+        return [(int(x + math.cos(a + angle) * radius * r * scale),
+                 int(y + math.sin(a + angle) * radius * r * scale))
+                for a, r in outline]
+
+    if h["kind"] == "meteors":
+        # Der Schweif zeigt immer entgegen der tatsächlichen Flugrichtung.
+        back = -h["vel"].normalize()
+        side = V(-back.y, back.x)
+        flicker = 0.88 + 0.12 * math.sin(h["phase"] * 11)
+        for length, width, color in (
+            (92, 19, (125, 39, 24)),
+            (69, 13, (225, 77, 27)),
+            (46, 8, (255, 164, 47)),
+            (26, 4, (255, 236, 139)),
+        ):
+            root = h["pos"] + back * (radius * .3)
+            tip = root + back * (length * flicker)
+            pygame.draw.polygon(screen, color, [
+                ip(root + side * width), ip(tip), ip(root - side * width)])
+        # Einzelne glühende Funken hinter dem Meteoriten.
+        for i in range(3):
+            distance = 27 + i * 19 + 5 * math.sin(h["phase"] * 6 + i)
+            spark_pos = h["pos"] + back * distance + side * math.sin(h["phase"] * 4 + i * 2) * (5 + i * 3)
+            pygame.draw.circle(screen, (255, 172, 56), ip(spark_pos), max(1, 3 - i))
+        pygame.draw.circle(screen, (210, 80, 28), ip(h["pos"]), radius + 4)
+        pygame.draw.polygon(screen, (116, 76, 64), rock_points())
+        pygame.draw.polygon(screen, (255, 173, 76), rock_points(), 2)
+        pygame.draw.polygon(screen, (177, 117, 82), rock_points(.67))
+    else:
+        pygame.draw.polygon(screen, (99, 106, 122), rock_points())
+        pygame.draw.polygon(screen, (168, 176, 190), rock_points(), 2)
+        pygame.draw.polygon(screen, (121, 128, 146), rock_points(.72))
+
+    # Krater und unregelmäßige Steinflächen drehen sich mit dem Fels.
+    for a, distance, size in h["craters"]:
+        center = (int(x + math.cos(a + angle) * radius * distance),
+                  int(y + math.sin(a + angle) * radius * distance))
+        pygame.draw.circle(screen, (67, 59, 65) if h["kind"] == "meteors"
+                           else (58, 64, 79), center, size)
+        pygame.draw.circle(screen, (164, 112, 85) if h["kind"] == "meteors"
+                           else (153, 161, 179), center, size, 1)
+
+
+def update_wave_events(dt, now):
+    global wave_event, wave_event_next, bonus_drone
+    # Ereignisse nur in normalen Jägerwellen: Bosskämpfe bleiben übersichtlich.
+    if wave >= 8:
+        return
+    if wave_event is None and now >= wave_event_next and len(enemies) >= 2:
+        start_random_event(now)
+    active = wave_event
+    if active:
+        name = active["name"]
+        if now >= active["end"]:
+            wave_event = None
+            wave_event_next = now + random.randint(13500, 20000)
+        elif now >= active["warn_until"]:
+            if name == "reinforcements" and not active["spawned"]:
+                active["spawned"] = True
+                for i in range(min(3, max(0, 16 - len(enemies)))):
+                    x = 95 + i * 125 if random.random() < .5 else W - 95 - i * 125
+                    e = new_enemy(x, 100 + i * 65, 2 if wave < 5 else 3,
+                                  "e1" if i != 1 else "e2")
+                    e["next_shot"] = now + 1900
+                    enemies.append(e)
+                    sparks(e["pos"], ORANGE, 12, 90)
+            elif name == "drone" and not active["spawned"]:
+                active["spawned"] = True
+                bonus_drone = {"pos": V(-35, 155), "hp": 3, "phase": 0}
+            elif name in ("asteroids", "meteors") and now >= active["spawn_at"]:
+                active["spawn_at"] = now + (1050 if name == "asteroids" else 620)
+                # Große Abstände und moderate Geschwindigkeit lassen Ausweichlücken.
+                wave_hazards.append({"pos": V(random.randint(45, W - 45), -35),
+                    "vel": V(random.randint(-30, 30), random.randint(115, 155)
+                             if name == "asteroids" else random.randint(190, 235)),
+                    "radius": random.randint(17, 24) if name == "asteroids" else random.randint(12, 16),
+                    "kind": name, "phase": random.random() * math.tau,
+                    "spin": random.choice((-1, 1)) * random.uniform(1.1, 2.7),
+                    "outline": [(i * math.tau / 10, random.uniform(.76, 1.05))
+                                for i in range(10)],
+                    "craters": [(random.random() * math.tau, random.uniform(.15, .54),
+                                 random.randint(2, 4)) for _ in range(3)]})
+    for h in wave_hazards[:]:
+        h["pos"] += h["vel"] * dt
+        h["phase"] += dt * 2
+        draw_rock_meteor(h)
+        for p in players():
+            if p and p["hp"] > 0 and (p["pos"] - h["pos"]).length() < h["radius"] + 23:
+                hit_player(p, now)
+                sparks(h["pos"], ORANGE, 15, 130)
+                wave_hazards.remove(h)
+                break
+        if h in wave_hazards and h["pos"].y > H + 45:
+            wave_hazards.remove(h)
+    if bonus_drone:
+        drone = bonus_drone
+        drone["pos"].x += 125 * dt
+        drone["phase"] += dt * 5
+        drone["pos"].y = 155 + math.sin(drone["phase"]) * 19
+        pygame.draw.circle(screen, PURPLE, ip(drone["pos"]), 22, 3)
+        pygame.draw.circle(screen, CYAN, ip(drone["pos"]), 13, 2)
+        draw_text("★", font, YELLOW, drone["pos"].x, drone["pos"].y)
+        for bullet in player_bullets[:]:
+            if (bullet["pos"] - drone["pos"]).length() < 26:
+                player_bullets.remove(bullet)
+                drone["hp"] -= 1
+                sound("impact_e1")
+                sparks(drone["pos"], CYAN, 8, 95)
+                if drone["hp"] <= 0:
+                    if random.random() < .19 and not training_mode:
+                        powerups.append({"pos": V(drone["pos"]), "kind": "mystery_skin",
+                            "start": now, "phase": 0.0})
+                    else:
+                        powerups.append({"pos": V(drone["pos"]),
+                            "kind": random.choice(("triple", "rapid", "side", "magnet", "special_ready")),
+                            "start": now, "phase": 0.0})
+                    explosion(drone["pos"], PURPLE)
+                    bonus_drone = None
+                break
+        if bonus_drone and drone["pos"].x > W + 40:
+            bonus_drone = None
+    if active and active["name"] == "interference" and now >= active["warn_until"]:
+        # Energie-Störung hilft beim Ausweichen: feindliche Projektile werden gebremst.
+        pygame.draw.rect(screen, CYAN, (4, 4, W - 8, H - 8), 2)
+    if wave_event_banner and now < wave_event_banner[1]:
+        name = wave_event_banner[0]
+        draw_text(event_label("warning") + " · " + event_label(name),
+                  font_m, ORANGE if name != "interference" else CYAN, W // 2, 95)
+
+
+def start_wave():
+    global mini_spawn_at, mini_spawned
+    mini_spawn_at = game_time + random.randint(3800, 7300)
+    mini_spawned = 0
+    reset_wave_events()
+    enemies.clear()
+    player_bullets.clear()
+    enemy_bullets.clear()
+    player_rockets.clear()
+    clear_boss_attacks()
+    powerups.clear()
+
+    if wave == 1:
+        for i in range(3):
+            enemies.append(new_enemy(250 + i * 200, 110 + i * 30, 2, "e1"))
+
+    elif wave == 2:
+        for i in range(5):
+            enemies.append(new_enemy(130 + i * 155, 100 + (i % 2) * 55, 3, "e2"))
+
+    elif wave == 3:
+        for x in (190, 450, 710):
+            enemies.append(new_enemy(x, 230, 2, "e1"))
+        for x in (310, 590):
+            enemies.append(new_enemy(x, 110, 5, "e3"))
+
+    elif wave == 4:
+        for x in (125, 335, 565, 775):
+            enemies.append(new_enemy(x, 290, 2, "e1"))
+        for x in (275, 625):
+            enemies.append(new_enemy(x, 205, 3, "e2"))
+        for x in (180, 450, 720):
+            enemies.append(new_enemy(x, 105, 5, "e3"))
+
+    elif wave == 5:
+        # Zusatzwelle 1: mehr Jaeger und ein erster Dreier.
+        for x in (110, 280, 450, 620, 790):
+            enemies.append(new_enemy(x, 275, 2, "e1"))
+        for x in (280, 620):
+            enemies.append(new_enemy(x, 180, 3, "e2"))
+        enemies.append(new_enemy(450, 90, 4, "e3"))
+
+    elif wave == 6:
+        # Zusatzwelle 2: eine weitere Zweier-Staffel.
+        for x in (110, 280, 450, 620, 790):
+            enemies.append(new_enemy(x, 290, 2, "e1"))
+        for x in (190, 450, 710):
+            enemies.append(new_enemy(x, 190, 3, "e2"))
+        enemies.append(new_enemy(450, 90, 5, "e3"))
+
+    elif wave == 7:
+        # Zusatzwelle 3: zwei Dreier, aber noch kein Boss.
+        for x in (110, 280, 450, 620, 790):
+            enemies.append(new_enemy(x, 300, 2, "e1"))
+        for x in (190, 450, 710):
+            enemies.append(new_enemy(x, 205, 3, "e2"))
+        for x in (300, 600):
+            enemies.append(new_enemy(x, 95, 5, "e3"))
+
+    elif wave == 8:
+        enemies.append(new_enemy(450, 110, 8, "boss"))
+
+    elif wave == 9:
+        enemies.append(new_enemy(450, 110, 8, "boss"))
+        for x in (240, 660):
+            enemies.append(new_enemy(x, 255, 3, "e2"))
+
+    elif wave == 10:
+        enemies.append(new_enemy(450, 115, 10, "giant"))
+
+    # Einser bleiben als Staffel zusammen, statt unabhängig herumzuschweben.
+    formation = [e for e in enemies if e["kind"] == "e1"]
+    for index, enemy in enumerate(formation):
+        enemy["formation_index"] = index
+        enemy["formation_total"] = len(formation)
+
+
+def restart_game():
+    global player, p1, p2, points, wave, game_time
+    global game_over, victory, duel_result, paused, show_help
+    global transition_until, transition_text, shake, attack_counter, preview_until, upgrade_pending, upgrade_choices, run_stats, upgrade_selected, combo, combo_until, finale_start
+
+    points = 0
+    wave = training_wave if training_mode else 1
+    combo = 0
+    combo_until = 0
+    finale_start = 0
+    game_time = 0
+    game_over = False
+    victory = False
+    duel_result = ""
+    paused = False
+    show_help = False
+    transition_until = 0
+    transition_text = ""
+    shake = 0
+    attack_counter = 0
+    preview_until = 0
+    upgrade_pending = False
+    upgrade_choices = []
+    upgrade_selected = -1
+    run_stats = {"upgrades": 0, "rockets": 0, "best_combo": 0, "kills": 0, "shots": 0, "hits": 0, "specials": 0}
+
+    for collection in (
+        player_bullets, enemy_bullets, duel_bullets,
+        player_rockets, enemy_rockets, enemies, powerups,
+        probes, beams, particles, rings, messages
+    ):
+        collection.clear()
+    probe_attacks.clear()
+
+    if mode == "duel":
+        p1 = new_player(450, 85, 1, 5, "p1")
+        p2 = new_player(450, 565, -1, 5, "p2")
+    elif mode == "coop":
+        p1 = new_player(330, 515, -1, 5, "p1")
+        p2 = new_player(570, 585, -1, 5, "p2")
+        start_wave()
+        preview_until = game_time + 2700
+    else:
+        player = new_player(450, 585, -1, 8, "solo")
+        start_wave()
+        preview_until = game_time + 2700
+
+
+POWER_COLORS = {
+    "triple": CYAN, "rapid": YELLOW, "heal": GREEN,
+    "rocket_ready": ORANGE, "shield_ready": BLUE,
+    "side": PURPLE, "magnet": GREEN, "special_ready": YELLOW, "mystery_skin": YELLOW
+}
+POWER_SYMBOLS = {
+    "triple": "3", "rapid": "F", "heal": "+",
+    "rocket_ready": "R", "shield_ready": "S",
+    "side": "+", "magnet": "M", "special_ready": "*", "mystery_skin": "???"
+}
+
+
+def drop_powerup(pos, now, boss=False):
+    if random.random() > (0.85 if boss else 0.23):
+        return
+    powerups.append({
+        "pos": V(pos), "kind": random.choice(list(POWER_COLORS)),
+        "start": now, "phase": random.uniform(0, math.tau)
+    })
+
+
+def update_powerups(dt, now):
+    for item in powerups[:]:
+        item["pos"].y += 88 * dt
+        # Magnet zieht Power-ups sanft zum nächsten aktiven Spieler.
+        magnet_players = [p for p in players() if p and p["hp"] > 0
+                          and now < p["magnet_until"]]
+        if magnet_players:
+            target = min(magnet_players, key=lambda p: (p["pos"] - item["pos"]).length_squared())
+            diff = target["pos"] - item["pos"]
+            if 20 < diff.length() < 230 + 55 * target["upgrades"]["magnet_range"]:
+                item["pos"] += diff.normalize() * min(235 * dt, diff.length())
+        item["phase"] += dt * 3
+
+        if item["pos"].y > H + 25 or now - item["start"] > 14000:
+            powerups.remove(item)
+            continue
+
+        color = POWER_COLORS[item["kind"]]
+        radius = 16 + int(math.sin(item["phase"]) * 2)
+        pygame.draw.circle(screen, color, ip(item["pos"]), radius, 3)
+        pygame.draw.circle(screen, (18, 28, 53), ip(item["pos"]), radius - 3)
+        draw_text(
+            POWER_SYMBOLS[item["kind"]],
+            font, color, item["pos"].x, item["pos"].y
+        )
+
+        for p in players():
+            if p["hp"] <= 0 or (item["pos"] - p["pos"]).length() >= 35:
+                continue
+
+            kind = item["kind"]
+            if kind == "mystery_skin":
+                available = [k for k in ("nebula", "solar", "emerald", "frost") if k not in records["skins"]]
+                if available:
+                    unlock_skin(random.choice(available))
+                else:
+                    p["hp"] = min(p["max_hp"], p["hp"] + 1)
+            elif kind == "triple":
+                p["triple_until"] = max(now, p["triple_until"]) + int(12000 * (1 + 0.18 * p["upgrades"]["power"]))
+            elif kind == "rapid":
+                p["rapid_until"] = max(now, p["rapid_until"]) + int(12000 * (1 + 0.18 * p["upgrades"]["power"]))
+            elif kind == "heal":
+                p["hp"] = min(p["max_hp"], p["hp"] + 1)
+            elif kind == "rocket_ready":
+                p["rocket_at"] = -100000
+            elif kind == "shield_ready":
+                p["shield_at"] = -100000
+            elif kind == "side":
+                p["side_until"] = max(now, p["side_until"]) + int(12000 * (1 + 0.18 * p["upgrades"]["power"]))
+            elif kind == "magnet":
+                p["magnet_until"] = max(now, p["magnet_until"]) + int(15000 * (1 + 0.18 * p["upgrades"]["power"]))
+            elif kind == "special_ready":
+                p["special_at"] = -100000
+
+            sound("power")
+            sparks(p["pos"], color, 24, 150)
+            add_ring(p["pos"], color)
+            if kind != "mystery_skin" or not available:
+                announce(kind, now, color)
+            powerups.remove(item)
+            break
+
+
+def hit_enemy(e, damage, now):
+    global points, shake, combo, combo_until
+
+    if e not in enemies:
+        return
+
+    if now < e["shield_until"]:
+        if now - e.get("last_shield_sound", -10000) >= 180:
+            sound("impact_shield")
+            e["last_shield_sound"] = now
+        sparks(e["pos"], CYAN, 5, 65)
+        return
+
+    # Jeder Gegnertyp hat seinen eigenen Trefferklang.
+    # Ein kurzes Limit verhindert Klangüberlagerung bei Spezial-Salven.
+    if now - e.get("last_impact_sound", -10000) >= 90:
+        sound("impact_" + e["kind"])
+        e["last_impact_sound"] = now
+    e["hp"] -= damage
+    sparks(e["pos"], ORANGE, 8 + (8 if e["kind"] in ("boss", "giant", "e4") else 2), 145)
+    sparks(e["pos"], SILVER, 4, 90)
+    add_ring(e["pos"], ORANGE, 45)
+    shake = max(shake, 4 if e["kind"] == "giant" else 2)
+
+    if e["hp"] <= 0:
+        if "mini_variant" in e:
+            mark_miniboss(e)
+            sparks(e["pos"], YELLOW, 42, 210)
+        run_stats["kills"] = run_stats.get("kills", 0) + 1
+        combo = combo + 1 if now <= combo_until else 1
+        combo_until = now + 3600
+        run_stats["best_combo"] = max(run_stats.get("best_combo", 0), combo)
+        if combo >= 10: unlock_achievement("combo")
+        points += (
+            1500 if e["kind"] == "giant"
+            else 500 if e["kind"] == "boss"
+            else 250 if e["kind"] == "e4"
+            else 100
+        ) * min(5, 1 + (combo - 1) // 5)
+        drop_powerup(e["pos"], now, e["kind"] in ("boss", "giant"))
+        explosion(
+            e["pos"], RED if e["kind"] == "giant" else ORANGE,
+            e["kind"] in ("boss", "giant")
+        )
+        enemies.remove(e)
+        if e["kind"] in ("boss", "giant"):
+            unlock_achievement("boss")
+        if points >= 10000:
+            unlock_achievement("score")
+        if points >= 100:
+            unlock_achievement("first")
+        update_records()
+        return
+
+    if e["kind"] == "giant":
+        # Nach jedem wirksamen Treffer: genau 2 Sekunden Schild.
+        e["shield_until"] = now + 2000
+        sound("special")
+        add_ring(e["pos"], CYAN, 120)
+        announce("boss_shield", now, CYAN)
+
+        level = rage_level(e)
+        if level > e["rage_announced"]:
+            e["rage_announced"] = level
+
+            # NEU: Einmaliger Wut-Sound beim Phasenwechsel.
+            if level == 1:
+                sound("boss_angry")
+                e["phase_music_at"] = now
+                announce("angry", now, RED)
+            else:
+                sound("boss_furious")
+                e["phase_music_at"] = now
+                announce("furious", now, RED)
+
+            sparks(e["pos"], RED, 45, 240)
+            add_ring(e["pos"], RED, 145)
+            e["next_double"] = min(e["next_double"], now + 600)
+            e["next_rockets"] = min(e["next_rockets"], now + 1400)
+
+    elif e["kind"] == "boss":
+        e["shield_until"] = now + 1000
+
+
+# ============================================================
+# BOSSR AKETEN UND GEGNER-SCHÜSSE
+# ============================================================
+
+def fire_enemy(e, target=None):
+    p = nearest_player(e["pos"])
+    if p is None:
+        return
+    aim = V(target) if target is not None else p["pos"]
+    origin = e["pos"] + V(0, 28)
+    if "mini_variant" in e:
+        variant = e["mini_variant"]
+        direction = aim - origin
+        if direction.length_squared() < 1:
+            direction = V(0, 1)
+        direction = direction.normalize()
+        if variant == 0:  # Phantom: three-way spread
+            directions, speed = [direction.rotate(a) for a in (-18, 0, 18)], 235
+        elif variant == 1:  # Nova: five-way burst
+            directions, speed = [direction.rotate(a) for a in (-28, -14, 0, 14, 28)], 190
+        elif variant == 2:  # Viper: fast, accurate pair
+            directions, speed = [direction.rotate(a) for a in (-5, 5)], 365
+        elif variant == 3:  # Titan: slow wide fan
+            directions, speed = [direction.rotate(a) for a in (-36, 0, 36)], 170
+        else:  # Eclipse: crossing shots
+            directions, speed = [direction.rotate(a) for a in (-42, -20, 20, 42)], 275
+        for direction in directions:
+            enemy_bullets.append(new_bullet(origin, direction, speed, e["kind"]))
+    else:
+        enemy_bullets.append(new_bullet(origin, aim - e["pos"],
+            300 if e["kind"] == "e4" else 270 if e["kind"] in ("boss", "giant") else 220, e["kind"]))
+    sound("enemy")
+
+
+def enemy_shot_delay(e):
+    if e["kind"] == "boss":
+        return (
+            random.randint(2300, 3500) if wave == 8
+            else random.randint(1000, 1700)
+        )
+    if e.get("counter_spam", False):
+        return random.randint(250, 430)
+    if e["kind"] == "e4":
+        if "mini_variant" in e:
+            return random.randint(max(550, 1700 - wave * 85 - e["mini_variant"] * 90), max(950, 2550 - wave * 90))
+        return random.randint(1800, 3200)
+    if mode == "easy":
+        return random.randint(6000, 9500)
+    if mode == "medium":
+        return random.randint(4200, 7300)
+    if hard:
+        return random.randint(2000, 4500)
+    return random.randint(3100, 6500)
+
+
+def launch_enemy_rockets(e, now, count=None):
+    count = min(3, count if count is not None else (3 if e["kind"] == "giant" else 2))
+    offsets = (
+        (-24, 24) if count == 2
+        else (-30, 0, 30) if count == 3
+        else [(i - (count - 1) / 2) * 24 for i in range(count)]
+    )
+    for dx in offsets:
+        enemy_rockets.append({
+            "pos": e["pos"] + V(dx, 35),
+            "dir": V(dx / 160, 1).normalize(),
+            "speed": 190 if e["kind"] == "giant" else 175,
+            "start": now
+        })
+    sound("rocket")
+
+
+def summon_minions(e, now):
+    if len(enemies) >= 13:
+        return
+
+    formations = [
+        (-145, 240, "e1"), (-50, 275, "e1"),
+        (50, 275, "e1"), (145, 240, "e2")
+    ]
+    for dx, y, kind in formations:
+        enemies.append(
+            new_enemy(
+                clamp(e["pos"].x + dx, 55, W - 55),
+                y, 2 if kind == "e1" else 3, kind
+            )
+        )
+
+    sparks(e["pos"], PURPLE, 38, 230)
+    announce("summon", now, PURPLE)
+    sound("special")
+
+
+# ============================================================
+# RAUMSONDEN MIT NEUEN GERÄUSCHEN
+# ============================================================
+
+def draw_probe(pr, now):
+    pos = pr["pos"]
+    angle = pr["angle"]
+    forward = V(math.cos(angle), math.sin(angle))
+    side = V(-forward.y, forward.x)
+
+    def local(a, b):
+        return pos + forward * a + side * b
+
+    wings = [
+        local(-10, -8), local(-19, -25), local(-10, -30),
+        local(0, -12), local(10, -30), local(19, -25),
+        local(10, -8)
+    ]
+    poly((35, 70, 105), wings)
+    poly(CYAN, wings, 2)
+    poly(SILVER, [
+        local(20, 0), local(4, -8), local(-15, -6),
+        local(-15, 6), local(4, 8)
+    ])
+    pygame.draw.circle(
+        screen, RED if pr["phase"] == "fire" else CYAN,
+        ip(pos), 6
+    )
+    line(
+        ORANGE, local(-12, 0),
+        local(-21 - 3 * math.sin(now / 80), 0), 4
+    )
+    if pr["phase"] in ("warn", "fire"):
+        line(RED, local(8, 0), local(25, 0), 4)
+
+
+def launch_probes(e, now):
+    global attack_counter
+
+    if e not in enemies:
+        return
+
+    # Derselbe Boss startet nicht mehrere Sondenreihen gleichzeitig.
+    if any(a["boss"] is e for a in probe_attacks.values()):
+        return
+
+    target = nearest_player(e["pos"])
+    if target is None:
+        return
+
+    attack_counter += 1
+    attack_id = attack_counter
+    giant = e["kind"] == "giant"
+    offsets = (
+        (-145, -87, -29, 29, 87, 145)
+        if giant else (-100, 0, 100)
+    )
+    center = clamp(
+        target["pos"].x,
+        180 if giant else 135,
+        W - (180 if giant else 135)
+    )
+
+    probe_attacks[attack_id] = {
+        "boss": e,
+        "remaining": len(offsets),
+        "hit": False
+    }
+
+    for i, dx in enumerate(offsets):
+        start = e["pos"] + V((i - (len(offsets) - 1) / 2) * 12, 30)
+        probes.append({
+            "pos": V(start),
+            "start": V(start),
+            "target": V(center + dx, 225 if giant else 240),
+            "start_at": now + i * 100,
+            "phase_at": now + i * 100,
+            "phase": "wait",
+            "angle": 0.0,
+            "attack": attack_id,
+            "giant": giant,
+            "fired": False
+        })
+
+    # NEU: Startgeräusch EINMAL pro Sondenreihe,
+    # nicht einmal pro Sonde und nicht pro Frame.
+    sound("probe_launch")
+    announce("six" if giant else "probes", now, RED)
+
+
+def finish_beam(beam, now):
+    if beam not in beams:
+        return
+
+    beams.remove(beam)
+    attack = probe_attacks.get(beam["attack"])
+    if attack is None:
+        return
+
+    attack["remaining"] -= 1
+    if attack["remaining"] > 0:
+        return
+
+    boss = attack["boss"]
+
+    # Nur echter Lebensverlust zählt als Treffer.
+    # Blockierte oder verfehlte Laser lösen den Gegenangriff aus.
+    if (
+        not attack["hit"]
+        and boss in enemies
+        and any(p["hp"] > 0 for p in players())
+    ):
+        launch_enemy_rockets(boss, now, 2)
+
+        # "Ein Vierer" = ein Gegner der Stufe 4.
+        if len(enemies) < 14:
+            extra = new_enemy(
+                clamp(
+                    boss["pos"].x + random.choice((-115, 115)),
+                    75, W - 75
+                ),
+                245, 6, "e4"
+            )
+            extra["counter_spam"] = True
+            extra["next_shot"] = now + 220
+            enemies.append(extra)
+            sparks(extra["pos"], CYAN, 30, 180)
+            add_ring(extra["pos"], CYAN, 75)
+
+        announce("counter", now, ORANGE)
+        sound("special")
+
+    del probe_attacks[beam["attack"]]
+
+
+def update_probes(dt, now):
+    # Pro Sondenreihe maximal ein mechanisches Drehgeräusch.
+    turning_sounds = set()
+    firing_sounds = set()
+
+    for pr in probes[:]:
+        if now < pr["start_at"]:
+            continue
+
+        if pr["phase"] == "wait":
+            pr["phase"] = "fly"
+            pr["phase_at"] = now
+
+        if pr["phase"] == "fly":
+            progress = clamp((now - pr["phase_at"]) / 750, 0, 1)
+            smooth = progress * progress * (3 - 2 * progress)
+            pr["pos"] = pr["start"].lerp(pr["target"], smooth)
+
+            if progress >= 1:
+                pr["phase"] = "turn"
+                pr["phase_at"] = now
+
+                # NEU: Drehgeräusch beim Beginn der Drehung.
+                if pr["attack"] not in turning_sounds:
+                    sound("probe_turn")
+                    turning_sounds.add(pr["attack"])
+
+        elif pr["phase"] == "turn":
+            progress = clamp((now - pr["phase_at"]) / 420, 0, 1)
+            pr["angle"] = math.pi / 2 * progress
+
+            if progress >= 1:
+                pr["phase"] = "warn"
+                pr["phase_at"] = now
+
+        elif pr["phase"] == "warn":
+            pr["angle"] = math.pi / 2
+            if (now // 90) % 2 == 0:
+                line(
+                    RED,
+                    (pr["pos"].x, pr["pos"].y + 18),
+                    (pr["pos"].x, H), 3
+                )
+
+            warning_time = (
+                700 if pr["giant"] and rage_level(
+                    probe_attacks[pr["attack"]]["boss"]
+                ) == 2
+                else 1050 if pr["giant"]
+                else 950 if wave == 9
+                else 1250
+            )
+
+            if now - pr["phase_at"] >= warning_time:
+                pr["phase"] = "fire"
+                pr["phase_at"] = now
+
+        elif pr["phase"] == "fire":
+            if not pr["fired"]:
+                pr["fired"] = True
+                beams.append({
+                    "x": pr["pos"].x,
+                    "y": pr["pos"].y + 17,
+                    "until": now + (500 if pr["giant"] else 420),
+                    "checked": set(),
+                    "giant": pr["giant"],
+                    "attack": pr["attack"]
+                })
+
+                # NEU: Lasergeräusch beim Abfeuern.
+                # Pro gleichzeitig beginnender Gruppe begrenzt,
+                # damit der Sound nicht unangenehm laut wird.
+                if pr["attack"] not in firing_sounds:
+                    sound("probe_fire")
+                    firing_sounds.add(pr["attack"])
+
+                sparks(pr["pos"], RED, 12, 130)
+
+            if now - pr["phase_at"] > (650 if pr["giant"] else 570):
+                probes.remove(pr)
+                continue
+
+        draw_probe(pr, now)
+
+    for beam in beams[:]:
+        if now >= beam["until"]:
+            finish_beam(beam, now)
+            continue
+
+        width = 24 if beam["giant"] else 25
+        x, y = beam["x"], beam["y"]
+        line(RED, (x, y), (x, H), width)
+        line(ORANGE, (x, y), (x, H), width // 2)
+        line(WHITE, (x, y), (x, H), 4)
+
+        for p in players():
+            if p["hp"] <= 0 or id(p) in beam["checked"]:
+                continue
+
+            if p["pos"].y >= y - 20 and abs(p["pos"].x - x) < width / 2 + 15:
+                beam["checked"].add(id(p))
+                if hit_player(p, now):
+                    attack = probe_attacks.get(beam["attack"])
+                    if attack is not None:
+                        attack["hit"] = True
+
+
+# ============================================================
+# ENDBOSS: WUTPHASEN
+# ============================================================
+
+def draw_boss_warning(e, attack, now):
+    pulse = 2 + int(2 * abs(math.sin(now / 95)))
+    color = RED if attack == "ROCKETS" else PURPLE
+    pygame.draw.circle(screen, color, ip(e["pos"]), 94 + pulse, 2 + pulse)
+    draw_text("⚠ " + attack + " ⚠", font, color, e["pos"].x, e["pos"].y + 102)
+    draw_text(extra("phase") + " " + str(rage_level(e) + 1), font_s, YELLOW, e["pos"].x, e["pos"].y + 130)
+    if attack == "ROCKETS":
+        for dx in (-30, 0, 30):
+            line(color, e["pos"] + V(dx, 42), e["pos"] + V(dx, 110), 2)
+    else:
+        pygame.draw.circle(screen, color, ip(e["pos"]), 113, 1)
+
+def update_giant(e, dt, now):
+    rage = rage_level(e)
+    if rage and now - e.get("phase_music_at", -100000) >= (4100 if rage == 2 else 6200):
+        sound("boss_furious" if rage == 2 else "boss_angry")
+        e["phase_music_at"] = now
+
+    if rage == 0:
+        probe_delay = (11500, 15500)
+        summon_delay = (18500, 24500)
+        rocket_delay = (8500, 11500)
+        double_delay = (1500, 2200)
+    elif rage == 1:
+        probe_delay = (9000, 12500)
+        summon_delay = (16000, 22000)
+        rocket_delay = (5200, 7500)
+        double_delay = (850, 1250)
+    else:
+        probe_delay = (7500, 10500)
+        summon_delay = (14500, 19500)
+        rocket_delay = (3300, 4800)
+        double_delay = (420, 650)
+
+    # Normale Bossbewegung. Für die Superattacke
+    # fliegt er NICHT von links nach rechts.
+    e["phase"] += dt * (0.85 + rage * 0.25)
+    e["pos"].x = W // 2 + math.sin(e["phase"]) * (100 + rage * 20)
+    e["pos"].y = 115 + math.sin(e["phase"] * 1.3) * 10
+
+    if now >= e["next_double"]:
+        target = nearest_player(e["pos"])
+        if target:
+            e["second_target"] = target["pos"].copy()
+            fire_enemy(e, e["second_target"])
+            e["second_shot_at"] = now + (135 if rage == 2 else 210)
+        e["next_double"] = now + random.randint(*double_delay)
+
+    if e["second_shot_at"] and now >= e["second_shot_at"]:
+        fire_enemy(e, e["second_target"])
+        e["second_shot_at"] = 0
+
+    if now >= e["next_probe"]:
+        launch_probes(e, now)
+        e["next_probe"] = now + random.randint(*probe_delay)
+
+    if now >= e["next_summon"]:
+        summon_minions(e, now)
+        e["next_summon"] = now + random.randint(*summon_delay)
+
+    if 0 < e["next_rockets"] - now < 1100:
+        draw_boss_warning(e, "ROCKETS", now)
+    if 0 < e["next_probe"] - now < 1400:
+        draw_boss_warning(e, "PROBES", now)
+    if now >= e["next_rockets"]:
+        launch_enemy_rockets(e, now, 3)
+        e["next_rockets"] = now + random.randint(*rocket_delay)
+
+
+# ============================================================
+# LENKRAKETEN
+# ============================================================
+
+def steer(r, target, dt, strength):
+    if target is None:
+        return
+    wanted = V(target) - r["pos"]
+    if wanted.length_squared() == 0:
+        return
+    wanted = wanted.normalize()
+    blend = min(1, dt * strength)
+    direction = r["dir"] * (1 - blend) + wanted * blend
+    if direction.length_squared() > 0:
+        r["dir"] = direction.normalize()
+
+
+def update_player_rockets(dt, now):
+    for r in player_rockets[:]:
+        if mode == "duel":
+            victim = p2 if r["owner"] == "top" else p1
+            target = victim["pos"] if victim["hp"] > 0 else None
+        elif enemies:
+            target = min(
+                enemies,
+                key=lambda e: (e["pos"] - r["pos"]).length_squared()
+            )["pos"]
+        else:
+            target = None
+
+        steer(r, target, dt, 3.2)
+        r["pos"] += r["dir"] * r["speed"] * dt
+        draw_rocket(r, now)
+
+        if (
+            now - r["start"] > 5000
+            or not (-40 < r["pos"].x < W + 40)
+            or not (-40 < r["pos"].y < H + 40)
+        ):
+            player_rockets.remove(r)
+            continue
+
+        if mode == "duel":
+            victim = p2 if r["owner"] == "top" else p1
+            attacker = p1 if r["owner"] == "top" else p2
+
+            if victim["hp"] > 0 and (r["pos"] - victim["pos"]).length() < 29:
+                player_rockets.remove(r)
+                explosion(r["pos"])
+                if hit_player(victim, now):
+                    attacker["streak"] += 1
+                    if attacker["streak"] >= 2:
+                        attacker["turbo"] = True
+                    if victim["hp"] <= 0:
+                        end_duel("p1wins" if r["owner"] == "top" else "p2wins", now)
+                        return
+
+        else:
+            for e in enemies[:]:
+                radius = (
+                    83 if e["kind"] == "giant"
+                    else 65 if e["kind"] == "boss"
+                    else 42 if e["kind"] == "e4"
+                    else 32
+                )
+                if (r["pos"] - e["pos"]).length() < radius:
+                    player_rockets.remove(r)
+                    explosion(r["pos"])
+                    hit_enemy(e, 2, now)
+                    break
+
+
+def update_enemy_rockets(dt, now):
+    for r in enemy_rockets[:]:
+        target = nearest_player(r["pos"])
+        if target:
+            steer(r, target["pos"], dt, 1.1)
+
+        r["pos"] += r["dir"] * r["speed"] * dt
+        draw_rocket(r, now)
+
+        if (
+            now - r["start"] > 7000
+            or not (-40 < r["pos"].x < W + 40)
+            or not (-40 < r["pos"].y < H + 40)
+        ):
+            enemy_rockets.remove(r)
+            continue
+
+        for p in players():
+            if p["hp"] > 0 and (r["pos"] - p["pos"]).length() < 27:
+                enemy_rockets.remove(r)
+                explosion(r["pos"])
+                hit_player(p, now)
+                break
+
+
+# ============================================================
+# STEUERUNG
+# ============================================================
+
+def update_controls(dt, now):
+    keys = pygame.key.get_pressed()
+
+    if mode not in ("duel", "coop"):
+        if keys[pygame.K_a]:
+            player["pos"].x -= 350 * dt
+        if keys[pygame.K_d]:
+            player["pos"].x += 350 * dt
+        player["pos"].x = clamp(player["pos"].x, 40, W - 40)
+
+        if keys[pygame.K_s]:
+            activate_shield(player, now)
+
+        if mouse_modes[mode]:
+            if pygame.mouse.get_pressed()[0]:
+                fire_player(player, "solo", now, pygame.mouse.get_pos())
+        elif keys[pygame.K_w]:
+            fire_player(player, "solo", now)
+        return
+
+    if p1["hp"] > 0:
+        if keys[pygame.K_LEFT]:
+            p1["pos"].x -= 235 * dt
+        if keys[pygame.K_RIGHT]:
+            p1["pos"].x += 235 * dt
+        if keys[pygame.K_DOWN]:
+            activate_shield(p1, now)
+        if keys[pygame.K_UP]:
+            fire_player(p1, "top", now)
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            fire_player_rocket(p1, "top", now)
+
+    if p2["hp"] > 0:
+        if keys[pygame.K_a]:
+            p2["pos"].x -= 235 * dt
+        if keys[pygame.K_d]:
+            p2["pos"].x += 235 * dt
+        if now < p2["dash_until"]:
+            p2["pos"].x += p2["dash_dir"] * 1000 * dt
+        if keys[pygame.K_s]:
+            activate_shield(p2, now)
+        if keys[pygame.K_w] or (
+            mode == "duel" and pygame.mouse.get_pressed()[0]
+        ):
+            fire_player(p2, "bottom", now)
+        if keys[pygame.K_e]:
+            fire_player_rocket(p2, "bottom", now)
+
+    p1["pos"].x = clamp(p1["pos"].x, 40, W - 40)
+    p2["pos"].x = clamp(p2["pos"].x, 40, W - 40)
+
+
+# ============================================================
+# GEGNER-UPDATE
+# ============================================================
+
+def update_enemies(dt, now):
+    for e in enemies[:]:
+        kind = e["kind"]
+
+        if kind == "giant":
+            update_giant(e, dt, now)
+
+        elif kind == "boss":
+            e["phase"] += dt * (1.0 if wave == 8 else 1.65)
+            e["pos"].x = W // 2 + math.sin(e["phase"]) * (
+                95 if wave == 8 else 150
+            )
+            e["pos"].y = e["base_y"] + math.sin(e["phase"] * 1.2) * 12
+
+            if wave == 9 and now >= e["next_attack"]:
+                launch_enemy_rockets(e, now)
+                e["next_attack"] = now + random.randint(4800, 7000)
+
+            if now >= e["next_probe"]:
+                launch_probes(e, now)
+                e["next_probe"] = now + (
+                    random.randint(8500, 12500)
+                    if wave == 8 else random.randint(3600, 5700)
+                )
+
+        else:
+            # Zweier: gezielt einem nahen, anfliegenden Spielerlaser ausweichen.
+            if kind == "e2" and now >= e["dodge_until"]:
+                threats = [b for b in player_bullets
+                           if abs(b["pos"].y - e["pos"].y) < 175
+                           and abs(b["pos"].x - e["pos"].x) < 70
+                           and b["dir"].y < -0.1]
+                if threats:
+                    threat = min(threats, key=lambda b: (b["pos"] - e["pos"]).length_squared())
+                    e["direction"] = 1 if threat["pos"].x < e["pos"].x else -1
+                    e["dodge_until"] = now + random.randint(1150, 2100)
+                    sparks(e["pos"], YELLOW, 3, 40)
+
+            if hard:
+                if e["attack_until"] and now >= e["attack_until"]:
+                    e["attack_until"] = 0
+                    e["next_attack"] = now + random.randint(4500, 9000)
+                    e["base_y"] = e["pos"].y
+
+                if not e["attack_until"] and now >= e["next_attack"]:
+                    active = sum(
+                        1 for other in enemies
+                        if other["attack_until"] > now
+                    )
+                    if active < 2:
+                        e["attack_until"] = now + 2500
+                    else:
+                        e["next_attack"] = now + 900
+
+            if e["attack_until"] > now:
+                target = nearest_player(e["pos"])
+                if target:
+                    direction = target["pos"] - e["pos"]
+                    if direction.length_squared() > 0:
+                        e["pos"] += direction.normalize() * 110 * dt
+                    for p in players():
+                        if (
+                            p["hp"] > 0
+                            and (e["pos"] - p["pos"]).length() < 39
+                            and now >= e["ram_until"]
+                        ):
+                            hit_player(p, now)
+                            e["ram_until"] = now + 1100
+            else:
+                e["phase"] += dt * 2
+                if kind == "e1" and e["formation_index"] is not None:
+                    index = e["formation_index"]
+                    total = e["formation_total"]
+                    spacing = min(165, 690 / max(1, total - 1))
+                    center = W / 2 + math.sin(now / 1600) * 65
+                    e["pos"].x = center + (index - (total - 1) / 2) * spacing
+                    e["pos"].y = e["base_y"] + math.sin(now / 500 + index * .3) * 11
+                else:
+                    e["pos"].x += e["direction"] * e["speed"] * (1.9 if kind == "e2" and now < e["dodge_until"] else 1.0) * dt
+                    e["pos"].y = e["base_y"] + math.sin(e["phase"]) * 15
+
+            margin = 60 if kind == "e4" else 50
+            e["pos"].x = clamp(e["pos"].x, margin, W - margin)
+            if e["pos"].x <= margin or e["pos"].x >= W - margin:
+                e["direction"] *= -1
+
+        # Dreier: kurze, gezielte Dreifach-Salven statt Einzelschüsse.
+        if kind == "e3" and e["salvo_remaining"] and now >= e["salvo_at"]:
+            fire_enemy(e, e["salvo_target"])
+            e["salvo_remaining"] -= 1
+            e["salvo_at"] = now + 210
+        elif kind != "giant" and now >= e["next_shot"]:
+            if kind == "e3":
+                target = nearest_player(e["pos"])
+                e["salvo_target"] = target["pos"].copy() if target else e["pos"] + V(0, 200)
+                e["salvo_remaining"] = 2
+                e["salvo_at"] = now + 210
+            fire_enemy(e)
+            e["next_shot"] = now + enemy_shot_delay(e)
+
+        ship(
+            e["pos"], kind, 1, now,
+            rage_level(e) if kind == "giant" else 0
+        )
+        if "mini_variant" in e:
+            tint = (PURPLE, CYAN, ORANGE, RED, YELLOW)[e["mini_variant"]]
+            mini_shape(ip(e["pos"]), e["mini_variant"], tint, .83)
+            pygame.draw.circle(screen, tint, ip(e["pos"]), 42 + int(2*math.sin(now/170)), 2)
+            draw_text(MINI_NAMES[e["mini_variant"]], font_s, tint, e["pos"].x, e["pos"].y - 53)
+
+        if now < e["shield_until"]:
+            pygame.draw.circle(
+                screen, CYAN, ip(e["pos"]),
+                97 if kind == "giant"
+                else 76 if kind == "boss" else 48,
+                3
+            )
+
+        if kind == "giant":
+            left, y = W // 2 - 140, 38
+            pygame.draw.rect(
+                screen, (35, 30, 45),
+                (left - 5, y - 5, 290, 25),
+                border_radius=5
+            )
+            for i in range(10):
+                pygame.draw.rect(
+                    screen,
+                    (RED if rage_level(e) >= 1 else PURPLE)
+                    if i < e["hp"] else (55, 45, 65),
+                    (left + i * 28, y, 23, 15),
+                    border_radius=3
+                )
+            draw_text(
+                f"{tr('giant')}  {e['hp']}/10",
+                font_s, WHITE, W // 2, 21
+            )
+        else:
+            for i in range(e["hp"]):
+                x = e["pos"].x - (e["hp"] - 1) * 6 + i * 12
+                y = e["pos"].y - (
+                    55 if kind == "boss"
+                    else 47 if kind == "e4" else 42
+                )
+                pygame.draw.circle(screen, GREEN, (round(x), round(y)), 4)
+
+
+# ============================================================
+# SPIELMODI
+# ============================================================
+
+def end_duel(result, now):
+    global duel_result, transition_until, transition_text
+    duel_result = result
+    transition_text = result
+    transition_until = now + 2600
+    duel_bullets.clear()
+    player_rockets.clear()
+
+
+def update_duel(dt, now):
+    update_controls(dt, now)
+    line((40, 55, 85), (0, H // 2), (W, H // 2))
+
+    for p, key, color, offset in (
+        (p1, "p1", GREEN, -57),
+        (p2, "p2", PURPLE, 57)
+    ):
+        if p["hp"] > 0:
+            draw_text(tr(key), font_s, color, p["pos"].x, p["pos"].y + offset)
+        draw_player(p, now)
+
+    for b in duel_bullets[:]:
+        b["pos"] += b["dir"] * b["speed"] * dt
+        draw_bullet(b)
+
+        if not (
+            -30 < b["pos"].x < W + 30
+            and -30 < b["pos"].y < H + 30
+        ):
+            duel_bullets.remove(b)
+            continue
+
+        victim = p2 if b["owner"] == "top" else p1
+        attacker = p1 if b["owner"] == "top" else p2
+
+        if victim["hp"] > 0 and (b["pos"] - victim["pos"]).length() < 28:
+            duel_bullets.remove(b)
+            if hit_player(victim, now):
+                attacker["streak"] += 1
+                if attacker["streak"] >= 2:
+                    attacker["turbo"] = True
+                if victim["hp"] <= 0:
+                    end_duel("p1wins" if b["owner"] == "top" else "p2wins", now)
+                    return
+
+    update_player_rockets(dt, now)
+
+
+def update_wave_game(dt, now):
+    global game_over, transition_until, transition_text
+
+    update_controls(dt, now)
+
+    for p in players():
+        draw_player(p, now)
+
+    if mode not in ("duel", "coop") and mouse_modes[mode]:
+        mx, my = pygame.mouse.get_pos()
+        pygame.draw.circle(screen, CYAN, (mx, my), 10, 1)
+        line(CYAN, (mx - 15, my), (mx + 15, my))
+        line(CYAN, (mx, my - 15), (mx, my + 15))
+
+    for b in player_bullets[:]:
+        b["pos"] += b["dir"] * b["speed"] * dt
+        draw_bullet(b)
+
+        if not (
+            -30 < b["pos"].x < W + 30
+            and -30 < b["pos"].y < H + 30
+        ):
+            player_bullets.remove(b)
+            continue
+
+        for e in enemies[:]:
+            radius = (
+                83 if e["kind"] == "giant"
+                else 65 if e["kind"] == "boss"
+                else 42 if e["kind"] == "e4" else 31
+            )
+            if (b["pos"] - e["pos"]).length() < radius:
+                player_bullets.remove(b)
+                run_stats["hits"] = run_stats.get("hits", 0) + 1
+                if "special_id" in b and e["kind"] in ("boss", "giant"):
+                    if b["special_id"] not in e["special_hits"]:
+                        e["special_hits"].add(b["special_id"])
+                        hit_enemy(e, 1, now)
+                    else:
+                        sparks(b["pos"], CYAN, 3, 40)
+                else:
+                    hit_enemy(e, b["damage"], now)
+                break
+
+    update_player_rockets(dt, now)
+    update_enemies(dt, now)
+    spawn_rare_miniboss(now)
+    update_wave_events(dt, now)
+
+    for b in enemy_bullets[:]:
+        interference = (wave_event is not None and wave_event["name"] == "interference"
+                        and now >= wave_event["warn_until"] and now < wave_event["end"])
+        b["pos"] += b["dir"] * b["speed"] * dt * (0.52 if interference else 1.0)
+        draw_bullet(b)
+
+        if not (
+            -35 < b["pos"].x < W + 35
+            and -35 < b["pos"].y < H + 35
+        ):
+            enemy_bullets.remove(b)
+            continue
+
+        for p in players():
+            if p["hp"] > 0 and (b["pos"] - p["pos"]).length() < 27:
+                enemy_bullets.remove(b)
+                hit_player(p, now)
+                break
+
+    update_enemy_rockets(dt, now)
+    update_probes(dt, now)
+    update_powerups(dt, now)
+
+    if all(p["hp"] <= 0 for p in players()):
+        update_records()
+        game_over = True
+        return
+
+    if not enemies:
+        reset_wave_events()
+        if wave >= 5:
+            unlock_achievement("five")
+        if not training_mode and wave + 1 > records["training_unlocked"]:
+            records["training_unlocked"] = min(MAX_WAVES, wave + 1)
+            save_records()
+        transition_text = "complete" if wave < MAX_WAVES else "victory"
+        transition_until = now + 2600
+        player_bullets.clear()
+        enemy_bullets.clear()
+        player_rockets.clear()
+        clear_boss_attacks()
+        powerups.clear()
+        sound("power")
+
+
+# ============================================================
+# HUD UND MENÜS
+# ============================================================
+
+def bar(x, y, width, progress, color):
+    progress = clamp(progress, 0, 1)
+    pygame.draw.rect(
+        screen, (35, 45, 68), (x, y, width, 9),
+        border_radius=4
+    )
+    if progress > 0:
+        pygame.draw.rect(
+            screen, color,
+            (x, y, max(1, int(width * progress)), 9),
+            border_radius=4
+        )
+
+
+def hud(now):
+    if mode not in ("duel", "coop"):
+        draw_text(f"{tr('lives')}: {player['hp']}", font, GREEN, 18, 14, False)
+        draw_text(f"{tr('points')}: {points}", font, WHITE, 195, 14, False)
+        draw_text(
+            f"{tr('wave')}: {wave}/{MAX_WAVES}",
+            font, WHITE, 410, 14, False
+        )
+
+        values = [
+            ("laser", (now - player["shot_at"]) / shot_cooldown(player, now), CYAN),
+            ("rocket", (now - player["rocket_at"]) / rocket_cooldown(player), ORANGE),
+            ("shield", (now - player["shield_at"]) / shield_cooldown(player), BLUE),
+            ("special", (now - player["special_at"]) / special_cooldown(player), PURPLE)
+        ]
+        for i, (key, progress, color) in enumerate(values):
+            y = 8 + i * 38
+            draw_text(tr(key), font_s, SILVER, 700, y, False)
+            bar(700, y + 22, 175, progress, color)
+
+        if combo > 1 and now < combo_until:
+            draw_text(f"{extra('combo')} ×{combo}  ·  ×{min(5, 1 + (combo - 1)//5)}", font_s, YELLOW, W // 2, 72)
+        if training_mode:
+            draw_text(extra("training"), font_s, CYAN, W // 2, 99)
+        if hard:
+            draw_text(tr("hard"), font, GREEN, W // 2, 70)
+
+        draw_text(
+            f"{tr('mouse')}: {tr('on') if mouse_modes[mode] else tr('off')}",
+            font_s, CYAN if mouse_modes[mode] else YELLOW,
+            W // 2, H - 22
+        )
+
+    else:
+        for p, key, y, color in (
+            (p1, "p1", 12, GREEN),
+            (p2, "p2", H - 120, PURPLE)
+        ):
+            draw_text(
+                f"{tr(key)}: {p['hp']} {tr('lives')}",
+                font_s, color, 20, y, False
+            )
+            values = [
+                ("laser", (now - p["shot_at"]) / shot_cooldown(p, now), color),
+                ("rocket", (now - p["rocket_at"]) / rocket_cooldown(p), ORANGE),
+                ("shield", (now - p["shield_at"]) / shield_cooldown(p), BLUE),
+                ("special", (now - p["special_at"]) / special_cooldown(p), CYAN)
+            ]
+            for i, (key2, progress, color2) in enumerate(values):
+                bar(20, y + 27 + i * 20, 150, progress, color2)
+                draw_text(tr(key2), font_s, SILVER, 180, y + 18 + i * 20, False)
+
+            if p["turbo"] and mode == "duel":
+                draw_text(
+                    f"{tr(key)} {tr('turbo')}",
+                    font_s, GREEN, W - 210, y + 5, False
+                )
+
+        if mode == "coop":
+            draw_text(
+                f"{tr('wave')} {wave}/{MAX_WAVES} | {tr('points')} {points}",
+                font_s, WHITE, W // 2, 22
+            )
+
+
+def fit_font(label, preferred, max_width):
+    if preferred.size(str(label))[0] <= max_width:
+        return preferred
+    for size in range(27, 13, -1):
+        candidate = pygame.font.SysFont("arial", size, bold=True)
+        if candidate.size(str(label))[0] <= max_width:
+            return candidate
+    return pygame.font.SysFont("arial", 13, bold=True)
+
+
+def button(rect, label, hover=False, color=CYAN):
+    pygame.draw.rect(
+        screen,
+        (28, 59, 100) if hover else (16, 31, 61),
+        rect, border_radius=12
+    )
+    pygame.draw.rect(
+        screen, YELLOW if hover else color,
+        rect, 2, border_radius=12
+    )
+    draw_text(
+        label, fit_font(label, font_m, rect.width - 22), YELLOW if hover else WHITE,
+        rect.centerx, rect.centery
+    )
+
+
+def title(value, y=95):
+    draw_text(value, font_title, RED, W // 2, y)
+
+
+# Das zuvor erstellte silber-gruene WMB-Logo ist direkt eingebettet.
+# Deshalb wird keine separate Bilddatei benoetigt.
+LOGO_DATA = (
+    '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'
+    '8Jt+atRyVNT/AHRL9+U0auqx+yZvvypl6SNuO8l/icT+w7N8Js+ampPJh4oDpQ2Y/wAqM+RajfVVO/6pm+/KiyVVSTvUTH+OVInZG4D5MXFHsobN'
+    '8Kx/IkO8mLil2UFl+FY/kWnXVNR/dEv35TTqmp/uiX78o1GrG4XeTLxTzj2BZfhaP5E2/wAmbikOtus3wvEtOuqanP7Il+/KbfU1H7/L9+UD0Nwu'
+    '8mviiP7XWb4YhTTvJv4ob/2Ns3w1B8q1A+ef9+k++KbdNL++v++KANuv8nPigP7W2b4bp/nJp3k78Tm9bdZfhym+ctSmWXH64/74ovOPPV7vfRcd'
+    'jarvJ+4mNO9ts/w5SfPTT+AnEpo/5LtPw5R/nFq8EnqSlhrT1aD6wgDZEnAriQwZNotp9V7oz/5qjScFuIUYJfZ6LbuvFF+dWAmGIkZiYf4oSvMQ'
+    'Y/WY/vQlcLGYycJtdMOHWam9y7UZ/wDOTD+F2tm+2s8PwlSfnVigggx+sx/ehGIIP3mP70IuwsZDPw71bD7e0xjH+H0x/FKoFVpC/wBO0magYwf9'
+    '7gP4nqs8xDn9Zj+9CQ+KIDaNg/ihADdXTS00nm5mBru4OB/ESo5TsgAIAACbd1TEIKSUtJcgYkokfaiKQCeqCPsRdqBhIIFBID//2Q=='
+)
+try:
+    LOGO_IMAGE = pygame.image.load(io.BytesIO(base64.b64decode(LOGO_DATA)), "wmb.jpg").convert()
+except pygame.error:
+    LOGO_IMAGE = None
+
+
+def draw_logo(x, y, width=255):
+    if LOGO_IMAGE is None:
+        draw_text("WMB", font_l, GREEN, x, y)
+        return
+    height = round(width * LOGO_IMAGE.get_height() / LOGO_IMAGE.get_width())
+    image = pygame.transform.smoothscale(LOGO_IMAGE, (width, height))
+    screen.blit(image, image.get_rect(center=(round(x), round(y))))
+
+MODE_NAMES = ["main", "medium", "easy", "duel", "coop"]
+mode_rects = {
+    name: pygame.Rect(190, 240 + i * 62, 530, 49)
+    for i, name in enumerate(MODE_NAMES)
+}
+info_rects = {
+    name: pygame.Rect(139, 243 + i * 62, 40, 40)
+    for i, name in enumerate(MODE_NAMES)
+}
+mouse_rects = {
+    name: pygame.Rect(640, 249 + i * 62, 58, 31)
+    for i, name in enumerate(MODE_NAMES[:3])
+}
+hard_rect = pygame.Rect(785, 36, 70, 34)
+language_rect = pygame.Rect(20, 170, 275, 43)
+back_rect = pygame.Rect(330, 535, 240, 49)
+language_rects = {
+    code: pygame.Rect(255, 218 + i * 82, 390, 62)
+    for i, code in enumerate(LANG_NAMES)
+}
+pause_rects = {
+    name: pygame.Rect(300, 250 + i * 70, 300, 53)
+    for i, name in enumerate(("resume", "controls", "language", "menu", "settings"))
+}
+
+
+settings_rect = pygame.Rect(690, 575, 180, 43)
+settings_back_rect = pygame.Rect(330, 535, 240, 49)
+settings_slider_rects = {
+    "effects": pygame.Rect(300, 265, 350, 13),
+    "music": pygame.Rect(300, 355, 350, 13),
+    "boss": pygame.Rect(300, 445, 350, 13),
+}
+settings_drag = None
+
+toggle_positions = {}
+
+def draw_toggle(rect, enabled, identity=None):
+    identity = identity or (rect.x, rect.y)
+    target = 1.0 if enabled else 0.0
+    previous = toggle_positions.get(identity, target)
+    # Ease towards target each rendered frame; no instantaneous jumping.
+    progress = previous + (target - previous) * 0.23
+    if abs(progress - target) < 0.003:
+        progress = target
+    toggle_positions[identity] = progress
+    off = RED
+    color = tuple(round(off[i] + (GREEN[i] - off[i]) * progress) for i in range(3))
+    pygame.draw.rect(screen, color, rect, border_radius=rect.height // 2)
+    cx = round(rect.left + rect.height // 2 + progress * (rect.width - rect.height))
+    pygame.draw.circle(screen, WHITE, (cx, rect.centery), rect.height // 2 - 4)
+
+
+def draw_help():
+    overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 225))
+    screen.blit(overlay, (0, 0))
+    rect = pygame.Rect(95, 90, 710, 490)
+    pygame.draw.rect(screen, (11, 21, 45), rect, border_radius=20)
+    pygame.draw.rect(screen, CYAN, rect, 2, border_radius=20)
+    draw_text(tr("controls"), font_m, YELLOW, W // 2, 127)
+    for i, item in enumerate(tr("help")):
+        draw_text(item, font_s, WHITE, W // 2, 175 + i * 37)
+    button(back_rect, tr("back"), back_rect.collidepoint(pygame.mouse.get_pos()))
+
+
+records_rect = pygame.Rect(680, 570, 200, 40)
+index_rect = pygame.Rect(605, 170, 265, 43)
+index_back_rect = pygame.Rect(18, 605, 170, 34)
+index_wave_rects = [pygame.Rect(18, 100 + i * 47, 180, 37) for i in range(10)]
+wardrobe_rect = pygame.Rect(725, 240, 160, 43)
+wardrobe_back_rect = pygame.Rect(18, 605, 170, 34)
+wardrobe_prev_rect = pygame.Rect(235, 565, 140, 44)
+wardrobe_next_rect = pygame.Rect(525, 565, 140, 44)
+wardrobe_equip_rect = pygame.Rect(375, 565, 150, 44)
+wardrobe_page = 0
+wardrobe_preview_skin = records["skin"]
+WARDROBE_SKINS = (["classic"] + ["mini_%d_%d" % (w,v) for w in range(1,11) for v in range(5)]
+                 + ["wave_%d" % w for w in range(1,11)] + ["nebula", "solar", "emerald", "frost", "legend"])
+upgrade_rects = [pygame.Rect(62 + i * 282, 275, 255, 155) for i in range(3)]
+
+def draw_upgrade_selection():
+    overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 225))
+    screen.blit(overlay, (0, 0))
+    draw_text(upgrade_label("choose"), font_l, YELLOW, W // 2, 175)
+    draw_text(f"{tr('wave')} {wave}/{MAX_WAVES}", font, SILVER, W // 2, 226)
+    for i, (key, rect) in enumerate(zip(upgrade_choices, upgrade_rects)):
+        color = UPGRADE_COLORS[key]
+        selected = i == upgrade_selected
+        elapsed = max(0, game_time - upgrade_selected_at) if selected else 0
+        # Kurzes Eindrücken: Karte wird kleiner und springt anschließend zurück.
+        press = math.sin(min(1, elapsed / 320) * math.pi) if selected else 0
+        inset = int(9 * press)
+        card = rect.inflate(-2 * inset, -2 * inset)
+        card.y += int(6 * press)
+        pygame.draw.rect(screen, (20, 32, 59), card, border_radius=12)
+        border_color = GREEN if selected else color
+        pygame.draw.rect(screen, border_color, card, 5 if selected else 3, border_radius=12)
+        if selected:
+            # Funkenspritzer rund um die gewählte Karte, ohne zusätzliche Dateien.
+            for spark_i in range(32):
+                angle = spark_i * math.tau / 32 + 0.19 * math.sin(spark_i * 2.4)
+                spread = 4 + min(elapsed, 620) * (0.045 + (spark_i % 4) * 0.013)
+                x = card.centerx + math.cos(angle) * (card.width / 2 + spread)
+                y = card.centery + math.sin(angle) * (card.height / 2 + spread)
+                radius = max(1, 4 - elapsed // 220)
+                pygame.draw.circle(screen, GREEN if spark_i % 3 else (190, 255, 195), (int(x), int(y)), radius)
+            glow = pygame.Surface((card.width + 18, card.height + 18), pygame.SRCALPHA)
+            pygame.draw.rect(glow, (75, 255, 125, max(0, 100 - elapsed // 9)), glow.get_rect(), 4, border_radius=15)
+            screen.blit(glow, (card.x - 9, card.y - 9))
+        draw_text(str(i + 1), font_l, GREEN if selected else color, card.centerx, card.y + 40)
+        draw_text(upgrade_label(key), font_s, WHITE, card.centerx, card.y + 94)
+        level = next((p["upgrades"][key] for p in players() if p), 0)
+        draw_text(f"Lv. {level} → {level + 1}", font_s, GREEN if selected else color, card.centerx, card.y + 125)
+    draw_text(upgrade_label("pick"), font, WHITE, W // 2, 500)
+
+def draw_records():
+    background(0)
+    draw_text(upgrade_label("records"), font_l, YELLOW, W // 2, 90)
+    draw_text(upgrade_label("highscore"), font_m, CYAN, W // 2, 150)
+    for i, (key, value) in enumerate(sorted(records["highscores"].items(), key=lambda x: -x[1])[:5]):
+        draw_text(f"{key.upper()}: {value:,}", font, WHITE, W // 2, 190 + i * 30)
+    draw_text(upgrade_label("achievements") + f" ({len(records['achievements'])}/{len(ACHIEVEMENTS)})", font_m, CYAN, W // 2, 375)
+    for i, (key, name) in enumerate(ACHIEVEMENTS.items()):
+        color = GREEN if key in records["achievements"] else SILVER
+        draw_text(("✓ " if key in records["achievements"] else "○ ") + achievement_name(key), font_s, color, 230 + (i % 2) * 420, 415 + (i // 2) * 38)
+    draw_text(upgrade_label("back"), font, WHITE, W // 2, 610)
+
+def mini_shape(center, variant, color, scale=1.0):
+    """Draw one of five distinct mini-boss silhouettes; also used in the index and wardrobe."""
+    cx, cy = int(center[0]), int(center[1])
+    shapes = (
+        [(-48, 20), (-24, -8), (0, -32), (24, -8), (48, 20), (16, 11), (0, 27), (-16, 11)],
+        [(-46, 13), (-30, -20), (-10, -12), (0, -38), (10, -12), (30, -20), (46, 13), (18, 27), (0, 13), (-18, 27)],
+        [(-52, -8), (-13, -19), (0, -37), (13, -19), (52, -8), (28, 9), (10, 8), (0, 34), (-10, 8), (-28, 9)],
+        [(-48, 23), (-43, -22), (-18, -22), (0, -38), (18, -22), (43, -22), (48, 23), (22, 18), (0, 35), (-22, 18)],
+        [(-45, 0), (-24, -26), (0, -14), (24, -26), (45, 0), (24, 26), (0, 14), (-24, 26)],
+    )
+    variant = int(variant) % len(shapes)
+    points = [(cx + round(px * scale), cy + round(py * scale)) for px, py in shapes[variant]]
+    pygame.draw.polygon(screen, color, points)
+    # Keep undiscovered bosses completely black, including their details.
+    if tuple(color) == (0, 0, 0):
+        pygame.draw.polygon(screen, (57, 69, 90), points, max(1, round(2 * scale)))
+        return
+    pygame.draw.polygon(screen, (210, 225, 245), points, max(1, round(2 * scale)))
+    pygame.draw.circle(screen, (15, 20, 40), (cx, cy), max(3, round(7 * scale)))
+    if variant == 0:
+        pygame.draw.line(screen, color, (cx-round(27*scale), cy), (cx+round(27*scale), cy), max(1, round(3*scale)))
+    elif variant == 1:
+        for dx in (-23, 23):
+            pygame.draw.circle(screen, (255, 240, 170), (cx+round(dx*scale), cy), max(2, round(4*scale)))
+    elif variant == 2:
+        pygame.draw.line(screen, (255, 245, 170), (cx, cy-round(23*scale)), (cx, cy+round(20*scale)), max(1, round(3*scale)))
+    elif variant == 3:
+        pygame.draw.rect(screen, (255, 220, 160), (cx-round(14*scale), cy-round(5*scale), max(2,round(28*scale)), max(2,round(10*scale))))
+    else:
+        pygame.draw.circle(screen, (255, 235, 160), (cx, cy), max(3, round(11*scale)), max(1,round(2*scale)))
+
+
+
+def draw_equipped_player_ship(p, now, skin_override=None):
+    """Render the equipped skin as the actual player craft, not just an outline."""
+    skin = skin_override if skin_override is not None else records.get("skin", "classic")
+    if skin == "classic" or skin not in records.get("skins", []):
+        ship(p["pos"], p["kind"], p["facing"], now)
+        return
+
+    cx, cy = p["pos"]
+    facing = p["facing"]
+    def pt(x, y):
+        # Skin artwork uses a fixed screen orientation: +Y is UP, -Y is DOWN.
+        # Do not multiply by facing: every equipped skin must point upwards.
+        return (round(cx + x), round(cy - y))
+    def poly(points, color, width=0):
+        pygame.draw.polygon(screen, color, [pt(x, y) for x, y in points], width)
+
+    color = SKIN_COLORS.get(skin)
+    if skin.startswith("mini_"):
+        try:
+            wave_num, variant = (int(v) for v in skin.split("_")[1:3])
+        except (ValueError, IndexError):
+            ship(p["pos"], p["kind"], facing, now)
+            return
+        color = (PURPLE, CYAN, ORANGE, RED, YELLOW)[variant % 5]
+        # Index silhouettes have their nose at negative screen Y; invert their
+        # coordinates into our fixed +Y-is-up skin coordinate system.
+        shapes = (
+            [(-48, 20), (-24, -8), (0, -32), (24, -8), (48, 20), (16, 11), (0, 27), (-16, 11)],
+            [(-46, 13), (-30, -20), (-10, -12), (0, -38), (10, -12), (30, -20), (46, 13), (18, 27), (0, 13), (-18, 27)],
+            [(-52, -8), (-13, -19), (0, -37), (13, -19), (52, -8), (28, 9), (10, 8), (0, 34), (-10, 8), (-28, 9)],
+            [(-48, 23), (-43, -22), (-18, -22), (0, -38), (18, -22), (43, -22), (48, 23), (22, 18), (0, 35), (-22, 18)],
+            [(-45, 0), (-24, -26), (0, -14), (24, -26), (45, 0), (24, 26), (0, 14), (-24, 26)],
+        )
+        scale = .60
+        hull = [(x * scale, -y * scale) for x, y in shapes[variant % 5]]
+        # Wave-specific insignia distinguishes skins of the same boss variant.
+        poly(hull, (max(12, color[0]//4), max(12, color[1]//4), max(12, color[2]//4)))
+        poly(hull, color, 2)
+        pygame.draw.circle(screen, (220, 240, 255), pt(0, 0), 4)
+        for side in (-1, 1):
+            pygame.draw.circle(screen, color, pt(side * 11, 8), 2 + wave_num % 3)
+        if variant % 5 == 1:
+            for side in (-1, 1):
+                pygame.draw.circle(screen, YELLOW, pt(side * 14, -1), 3)
+        elif variant % 5 == 2:
+            pygame.draw.line(screen, YELLOW, pt(0, -16), pt(0, 13), 2)
+        elif variant % 5 == 3:
+            pygame.draw.rect(screen, YELLOW, (round(cx-7), round(cy-3), 14, 6), 1)
+        elif variant % 5 == 4:
+            pygame.draw.circle(screen, YELLOW, pt(0, 0), 8, 2)
+    else:
+        if skin.startswith("wave_"):
+            try:
+                wave_num = int(skin.split("_")[1])
+            except ValueError:
+                wave_num = 1
+            color = (min(255, 110 + wave_num * 13), 170 + (wave_num * 7) % 75, 65 + (wave_num * 19) % 150)
+            hull = [(0, 30), (-13, 12), (-32, -13), (-12, -8), (0, -23), (12, -8), (32, -13), (13, 12)]
+        elif skin == "legend":
+            color = YELLOW
+            hull = [(0, 35), (-13, 14), (-36, 1), (-27, -20), (-8, -12), (0, -27), (8, -12), (27, -20), (36, 1), (13, 14)]
+        elif skin == "nebula":
+            hull = [(0, 31), (-14, 12), (-33, -17), (-10, -9), (0, -25), (10, -9), (33, -17), (14, 12)]
+        elif skin == "solar":
+            hull = [(0, 34), (-8, 12), (-37, 4), (-25, -17), (-8, -13), (0, -24), (8, -13), (25, -17), (37, 4), (8, 12)]
+        elif skin == "emerald":
+            hull = [(0, 32), (-13, 13), (-31, -12), (-16, -18), (0, -10), (16, -18), (31, -12), (13, 13)]
+        else:  # frost and future non-boss skins
+            hull = [(0, 34), (-10, 9), (-34, -18), (-11, -11), (0, -27), (11, -11), (34, -18), (10, 9)]
+        color = color or CYAN
+        poly(hull, (max(10, color[0]//5), max(10, color[1]//5), max(10, color[2]//5)))
+        poly(hull, color, 3)
+        poly([(0, 20), (-5, -4), (0, -14), (5, -4)], color)
+        pygame.draw.circle(screen, WHITE, pt(0, 0), 3)
+
+    # +Y points upwards on screen, so negative local Y places the flame below.
+    # Only the appearance changes; the original player's weapons remain untouched.
+    flame = 9 + 4 * math.sin(now / 85)
+    poly([(-5, -24), (0, -24 - flame), (5, -24)], ORANGE)
+
+
+def draw_index():
+    background(0)
+    mouse = pygame.mouse.get_pos()
+    draw_text(ix("index"), font_m, YELLOW, W // 2, 39)
+    draw_text(ix("spawn") % int(round(MINI_SPAWN_CHANCE * 100)), font_s, CYAN, W // 2, 75)
+    pygame.draw.line(screen, CYAN, (211, 100), (211, 588), 2)
+    for i, rect in enumerate(index_wave_rects):
+        count = sum(k.startswith(str(i+1) + ":") for k in records["minibosses"])
+        button(rect, "%s %d  %d/5" % (ix("wave"), i+1, count),
+               index_wave == i+1 or rect.collidepoint(mouse), GREEN if count == 5 else CYAN)
+    # Right-side grid starts beyond the wave navigation and never overlaps it.
+    for i, name in enumerate(MINI_NAMES):
+        col, row = i % 3, i // 3
+        rect = pygame.Rect(232 + col * 219, 116 + row * 204, 198, 194)
+        x, y = rect.centerx, rect.y + 73
+        known = "%s:%s" % (index_wave, i) in records["minibosses"]
+        pygame.draw.rect(screen, (13, 25, 49), rect, border_radius=10)
+        pygame.draw.rect(screen, GREEN if known else SILVER, rect, 2, border_radius=10)
+        draw_text(ix("individual_chance") % (MINI_VARIANT_CHANCES[i] * 100), font_s, CYAN, x, rect.y + 19)
+        mini_shape((x,y), i, (PURPLE, CYAN, ORANGE, RED, YELLOW)[i] if known else (0,0,0), 0.88)
+        draw_text(name if known else "???", font_s, GREEN if known else YELLOW, x, rect.y+113)
+        draw_text(ix("defeat_count") % records.get("mini_kills", {}).get("%s:%s" % (index_wave, i), 1) if known else ix("unknown"), font_s, SILVER, x, rect.y+137)
+        attack = MINI_ATTACKS[language][i] if known else "???"
+        attack_label = ix("attack_label") % attack
+        draw_text(attack_label, fit_font(attack_label, font_s, rect.w-10), CYAN if known else SILVER, x, rect.y+163)
+    count = sum(k.startswith(str(index_wave)+":") for k in records["minibosses"])
+    draw_text("%s %d · %d/5" % (ix("wave"), index_wave, count), font_s, CYAN, 560, 545)
+    draw_text(ix("index_hint"), font_s, SILVER, 550, 581)
+    button(index_back_rect, upgrade_label("back"), index_back_rect.collidepoint(mouse))
+
+
+def draw_wardrobe():
+    background(0)
+    mouse = pygame.mouse.get_pos()
+    now = pygame.time.get_ticks()
+    draw_text(ix("wardrobe"), font_l, YELLOW, W//2, 40)
+    draw_text(ix("wardrobe_hint"), font_s, SILVER, W//2, 82)
+    start = wardrobe_page * 8
+    for i, skin in enumerate(WARDROBE_SKINS[start:start+8]):
+        rect = pygame.Rect(45 + (i%4)*214, 101 + (i//4)*137, 190, 125)
+        owned = skin in records["skins"]
+        selected = skin == wardrobe_preview_skin
+        equipped = skin == records["skin"]
+        pygame.draw.rect(screen, (15,34,49), rect, border_radius=9)
+        pygame.draw.rect(screen, YELLOW if selected else GREEN if equipped else CYAN if owned else SILVER,
+                         rect, 3 if selected else 2, border_radius=9)
+        tint = SKIN_COLORS.get(skin, (255,180,80) if skin.startswith("wave_") else
+                               (PURPLE,CYAN,ORANGE,RED,YELLOW)[int(skin.rsplit("_",1)[-1])] if skin.startswith("mini_") else CYAN)
+        # The card and the large preview use the same ship renderer as gameplay.
+        if owned:
+            preview_player = {"pos": V(rect.centerx, rect.y+49), "kind": "solo", "facing": 1}
+            # Scale by drawing on a temporary surface, then blit the reduced image.
+            small = pygame.Surface((110, 100), pygame.SRCALPHA)
+            original_screen = screen
+            try:
+                globals()["screen"] = small
+                preview_player["pos"] = V(55, 49)
+                draw_equipped_player_ship(preview_player, now, skin)
+            finally:
+                globals()["screen"] = original_screen
+            screen.blit(pygame.transform.smoothscale(small, (88, 80)), (rect.centerx-44, rect.y+4))
+        else:
+            mini_shape((rect.centerx, rect.y+46), int(skin.rsplit("_",1)[-1]) if skin.startswith("mini_") else 0,
+                       (0,0,0), .62)
+            draw_text("???", font_s, YELLOW, rect.centerx, rect.y+74)
+        label = skin.upper().replace("_", " ") if owned else "???"
+        draw_text(label, fit_font(label,font_s,rect.w-8), GREEN if equipped else WHITE if owned else SILVER, rect.centerx,rect.y+105)
+
+    panel = pygame.Rect(45, 382, 810, 169)
+    pygame.draw.rect(screen, (11, 26, 47), panel, border_radius=13)
+    pygame.draw.rect(screen, CYAN, panel, 2, border_radius=13)
+    draw_text(ix("preview"), font_m, YELLOW, 450, 405)
+    owned = wardrobe_preview_skin in records["skins"]
+    if owned:
+        p = {"pos": V(450, 465), "kind": "solo", "facing": 1}
+        draw_equipped_player_ship(p, now, wardrobe_preview_skin)
+        # Animated engine, shield ring and standard player laser shots.
+        pygame.draw.arc(screen, BLUE, (403, 418, 94, 94),
+                        (now / 1100) % math.tau, (now / 1100) % math.tau + 4.6, 2)
+        for dx in (-10, 10):
+            laser_y = 434 - (now // 8 + dx * 7) % 24
+            pygame.draw.line(screen, CYAN, (450 + dx, laser_y), (450 + dx, laser_y - 10), 3)
+        label = wardrobe_preview_skin.upper().replace("_", " ")
+        draw_text(label, fit_font(label, font_s, 225), WHITE, 180, 458)
+        if wardrobe_preview_skin == records["skin"]:
+            draw_text(ix("equipped"), font_s, GREEN, 180, 484)
+        else:
+            draw_text(ix("choose"), font_s, GREEN, 180, 484)
+    else:
+        mini_shape((450, 465), int(wardrobe_preview_skin.rsplit("_",1)[-1]) if wardrobe_preview_skin.startswith("mini_") else 0,
+                   (0,0,0), 1.0)
+        draw_text("???", font_m, YELLOW, 450, 465)
+        draw_text(ix("locked"), font_s, SILVER, 180, 468)
+    draw_text(ix("preview_hint"), fit_font(ix("preview_hint"), font_s, 355), SILVER, 664, 480)
+    button(wardrobe_prev_rect, ix("previous"), wardrobe_prev_rect.collidepoint(mouse))
+    button(wardrobe_next_rect, ix("next"), wardrobe_next_rect.collidepoint(mouse))
+    draw_text("%d / %d" % (wardrobe_page+1, (len(WARDROBE_SKINS)+7)//8), font_s, CYAN, W//2, 626)
+    button(wardrobe_back_rect, upgrade_label("back"), wardrobe_back_rect.collidepoint(mouse))
+
+
+def draw_menu_title(dt):
+    """Grosses STARFALL-Logo mit Einschusskratern und animierten Raketen."""
+    headline = pygame.font.SysFont("arialblack", 105, bold=True)
+    text_surface = headline.render("STARFALL", True, (255, 76, 83))
+    text_rect = text_surface.get_rect(center=(W // 2, 95))
+    # Dunkle Kontur, damit der Schriftzug vor den Sternen gut lesbar bleibt.
+    outline = headline.render("STARFALL", True, (85, 14, 32))
+    for ox, oy in ((-3, 0), (3, 0), (0, -3), (0, 3)):
+        screen.blit(outline, text_rect.move(ox, oy))
+    screen.blit(text_surface, text_rect)
+    # Kleine dunkle Einschuesse mit ausgefransten, hellen Einschlagkanten.
+    for fx, fy, radius in ((.13, .44, 7), (.29, .67, 6), (.49, .33, 8),
+                           (.68, .61, 7), (.87, .39, 6)):
+        x = int(text_rect.left + text_rect.width * fx)
+        y = int(text_rect.top + text_rect.height * fy)
+        pygame.draw.circle(screen, (255, 187, 100), (x - 1, y - 1), radius + 2, 2)
+        pygame.draw.circle(screen, (24, 13, 26), (x, y), radius)
+        for angle in range(0, 360, 60):
+            a = math.radians(angle)
+            pygame.draw.line(screen, (255, 164, 95),
+                             (int(x + math.cos(a) * (radius + 3)), int(y + math.sin(a) * (radius + 3))),
+                             (int(x + math.cos(a) * (radius + 7)), int(y + math.sin(a) * (radius + 7))), 1)
+    # Zwei kleine Raketen fliegen am Schriftzug entlang; Flammen pulsieren.
+    tick = pygame.time.get_ticks() / 1000.0
+    for rx, ry, direction in ((text_rect.left - 23, 64, 1),
+                               (text_rect.right + 23, 133, -1)):
+        flicker = 8 + int(4 * (1 + math.sin(tick * 13 + rx)))
+        tip = (rx + direction * 16, ry)
+        pygame.draw.polygon(screen, (210, 222, 240),
+                            [(rx - direction * 10, ry - 5), tip,
+                             (rx - direction * 10, ry + 5)])
+        pygame.draw.polygon(screen, (255, 95, 55),
+                            [(rx - direction * 9, ry - 4),
+                             (rx - direction * (12 + flicker), ry),
+                             (rx - direction * 9, ry + 4)])
+        pygame.draw.circle(screen, CYAN, (rx, ry), 2)
+
+
+training_rect = pygame.Rect(15, 605, 175, 35)
+
+def draw_menu(dt):
+    background(dt)
+    draw_menu_title(dt)
+    # Das komplette WMB-Logo sitzt nun unter den Spielmodus-Knoepfen.
+    draw_logo(W // 2, 574, 145)
+    mouse = pygame.mouse.get_pos()
+
+    button(
+        language_rect,
+        f"{tr('language')}: {LANG_NAMES[language]}",
+        language_rect.collidepoint(mouse)
+    )
+    draw_toggle(hard_rect, hard, "hard")
+    draw_text(tr("hard"), font_s, GREEN if hard else RED, hard_rect.centerx, 92)
+
+    for name in MODE_NAMES:
+        rect = mode_rects[name]
+        button(rect, tr(name), rect.collidepoint(mouse))
+        info = info_rects[name]
+        pygame.draw.circle(
+            screen, CYAN if info.collidepoint(mouse) else SILVER,
+            info.center, 18, 2
+        )
+        draw_text("i", font, CYAN, info.centerx, info.centery)
+
+        if name in mouse_rects:
+            draw_toggle(mouse_rects[name], mouse_modes[name], name)
+
+    draw_text("WMB SOFTWARE", font_s, SILVER, W // 2, 637)
+    button(training_rect, extra("training"), training_rect.collidepoint(mouse))
+    button(index_rect, ix("index"), index_rect.collidepoint(mouse))
+    button(wardrobe_rect, ix("wardrobe"), wardrobe_rect.collidepoint(mouse))
+    button(settings_rect, tr("settings"), settings_rect.collidepoint(mouse))
+    button(records_rect, upgrade_label("records"), records_rect.collidepoint(mouse))
+    if show_help:
+        draw_help()
+
+
+def draw_training(dt):
+    background(dt)
+    title("STARFALL", 95)
+    draw_text(extra("training"), font_l, CYAN, W//2, 210)
+    draw_text(f"{extra('training_wave')}: {training_wave} / {records['training_unlocked']}", font_m, YELLOW, W//2, 310)
+    draw_text(extra("training_hint"), font_s, WHITE, W//2, 395)
+    draw_text(extra("training_note"), font_s, SILVER, W//2, 445)
+
+
+def draw_language(dt):
+    background(dt)
+    title("STARFALL", 93)
+    draw_text(
+        tr("choose_language"),
+        font, CYAN, W // 2, 169
+    )
+    mouse = pygame.mouse.get_pos()
+    for code, rect in language_rects.items():
+        button(rect, LANG_NAMES[code], rect.collidepoint(mouse))
+
+
+def draw_settings(dt):
+    background(dt)
+    title("STARFALL", 100)
+    draw_text(tr("settings"), font_l, CYAN, W // 2, 185)
+    mouse = pygame.mouse.get_pos()
+    for name, key, value in (
+        ("effects", "effects_volume", SFX_VOLUME),
+        ("music", "music_volume", MUSIC_VOLUME),
+        ("boss", "boss_volume", BOSS_VOLUME),
+    ):
+        rect = settings_slider_rects[name]
+        draw_text(tr(key), font, WHITE, W // 2, rect.y - 29)
+        pygame.draw.rect(screen, (40, 60, 85), rect, border_radius=6)
+        fill = pygame.Rect(rect.x, rect.y, round(rect.w * value), rect.h)
+        if fill.w:
+            pygame.draw.rect(screen, CYAN, fill, border_radius=6)
+        pygame.draw.circle(screen, WHITE, (rect.x + round(rect.w * value), rect.centery), 12)
+        draw_text(f"{round(value * 100)}%", font_s, SILVER, rect.right + 48, rect.centery)
+    button(settings_back_rect, tr("back"), settings_back_rect.collidepoint(mouse))
+
+
+def set_slider(mouse):
+    global SFX_VOLUME, MUSIC_VOLUME, BOSS_VOLUME
+    if settings_drag not in settings_slider_rects:
+        return
+    rect = settings_slider_rects[settings_drag]
+    value = clamp((mouse[0] - rect.x) / rect.w, 0, 1)
+    if settings_drag == "effects":
+        SFX_VOLUME = value
+    elif settings_drag == "music":
+        MUSIC_VOLUME = value
+        update_music_volume()
+    else:
+        BOSS_VOLUME = value
+
+
+def draw_wave_preview(now):
+    overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 185))
+    screen.blit(overlay, (0, 0))
+    draw_text(f"{tr('wave')} {wave}/{MAX_WAVES}", font_l, YELLOW, W // 2, 185)
+    draw_text(tr("wave_preview"), font_m, WHITE, W // 2, 240)
+    counts = [(kind, sum(e["kind"] == kind for e in enemies))
+              for kind in ("e1", "e2", "e3", "e4", "boss", "giant")]
+    counts = [(kind, count) for kind, count in counts if count]
+    spacing = min(160, 760 / max(1, len(counts)))
+    for index, (kind, count) in enumerate(counts):
+        x = W / 2 + (index - (len(counts) - 1) / 2) * spacing
+        ship(V(x, 335), kind, 1, now)
+        draw_text(f"× {count}", font, CYAN, x, 420)
+    remaining = max(0, (preview_until - now) / 1000)
+    bar(W // 2 - 190, 475, 380, 1 - remaining / 2.7, CYAN)
+
+
+def draw_pause():
+    overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 220))
+    screen.blit(overlay, (0, 0))
+
+    if show_help:
+        draw_help()
+        return
+
+    draw_text(tr("pause"), font_l, YELLOW, W // 2, 155)
+    mouse = pygame.mouse.get_pos()
+    for name, rect in pause_rects.items():
+        button(rect, tr(name), rect.collidepoint(mouse))
+
+
+def draw_end():
+    overlay = pygame.Surface((W, 270 if victory else 200), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 215))
+    screen.blit(overlay, (0, H // 2 - (135 if victory else 100)))
+
+    result = (
+        tr(duel_result) if mode == "duel" and victory
+        else tr("victory") if victory
+        else tr("over")
+    )
+    draw_text(
+        result, font_l, GREEN if victory else RED,
+        W // 2, H // 2 - 28
+    )
+    if victory and mode != "duel":
+        for i in range(34):
+            t = game_time / 1000 + i * 1.37
+            x = int((i * 137 + math.sin(t * 0.9) * 36) % W)
+            y = int((i * 71 - game_time * (0.025 + (i % 3) * 0.01)) % H)
+            pygame.draw.circle(screen, (YELLOW, CYAN, GREEN, PURPLE)[i % 4], (x, y), 1 + i % 3)
+        draw_text(extra("victory_stats"), font_s, CYAN, W//2, H//2 + 20)
+        draw_text(f"{tr('points')}: {points:,}  ·  {extra('best')}: {records['highscores'].get(mode + ('_hard' if hard else ''), 0):,}", font_s, WHITE, W//2, H//2 + 48)
+        draw_text(f"{extra('upgrades_used')}: {run_stats.get('upgrades', 0)}  ·  {extra('combo')}: {run_stats.get('best_combo', 0)}", font_s, GREEN, W//2, H//2 + 73)
+        draw_text(f"{ix('kills')}: {run_stats.get('kills', 0)}  ·  {ix('accuracy')}: {100*run_stats.get('hits',0)/max(1,run_stats.get('shots',0)):.0f}%  ·  {ix('specials')}: {run_stats.get('specials',0)}", font_s, CYAN, W//2, H//2 + 96)
+        if not training_mode and run_stats.get('rockets', 0) == 0:
+            unlock_achievement("no_rockets")
+    draw_text(tr("return"), font, WHITE, W // 2, H // 2 + (132 if victory else 43))
+
+
+# ============================================================
+# HAUPTSCHLEIFE
+# ============================================================
+
+running = True
+
+async def main():
+    global ach, amount, code, color, dt, dx, dy, elapsed, event, expiry, frame, game_over, game_time, handled, hard, i, img, index, index_wave, label, language, language_from_pause, mode, mouse, name, paused, preview_until, progress, real_now, rect, running, scale, scroll_y, settings_drag, settings_from_pause, shake, show_help, skin, state, training_mode, training_wave, transition_until, upgrade_choices, upgrade_pending, upgrade_selected, victory, wardrobe_page, wardrobe_preview_skin, wave, y
+    while running:
+        dt = min(clock.tick(FPS) / 1000, 0.05)
+        real_now = pygame.time.get_ticks()
+
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                settings_drag = None
+            if event.type == pygame.KEYDOWN and state == "game" and upgrade_pending and not paused and event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
+                choose_upgrade(event.key - pygame.K_1)
+                continue
+            if event.type == pygame.MOUSEBUTTONDOWN and state == "game" and upgrade_pending and not paused and event.button == 1:
+                for index, rect in enumerate(upgrade_rects):
+                    if rect.collidepoint(event.pos):
+                        choose_upgrade(index)
+                        break
+                continue
+            if event.type == pygame.MOUSEMOTION and state == "settings" and settings_drag:
+                set_slider(event.pos)
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if state == "intro":
+                        state = "language"
+
+                    elif state == "language":
+                        state = "game" if language_from_pause else "menu"
+                        if language_from_pause:
+                            paused = True
+                        language_from_pause = False
+
+                    elif state == "settings":
+                        state = "game" if settings_from_pause else "menu"
+                        paused = settings_from_pause
+                        settings_from_pause = False
+                        update_music_volume()
+
+                    elif state in ("records", "index", "wardrobe"):
+                        state = "menu"
+                    elif state == "training":
+                        state = "menu"
+                    elif state == "menu":
+                        if show_help:
+                            show_help = False
+                        else:
+                            running = False
+
+                    elif state == "game":
+                        if show_help:
+                            show_help = False
+                        elif not game_over:
+                            paused = not paused
+                            update_music_volume()
+
+                elif state == "training" and event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                    training_wave = max(1, min(records["training_unlocked"], training_wave + (-1 if event.key == pygame.K_LEFT else 1)))
+                elif state == "training" and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    training_mode = True
+                    mode = "main"
+                    restart_game()
+                    state = "game"
+                elif state == "intro" and event.key == pygame.K_SPACE:
+                    state = "language"
+
+                elif state == "game" and game_over and event.key == pygame.K_r:
+                    state = "menu"
+                    paused = False
+
+                elif (
+                    state == "game"
+                    and not paused
+                    and not game_over
+                    and transition_until == 0
+                ):
+                    if mode not in ("duel", "coop"):
+                        if event.key == pygame.K_e:
+                            fire_player_rocket(player, "solo", game_time)
+                        elif event.key == pygame.K_SPACE:
+                            activate_special(player, game_time)
+                    else:
+                        # macOS: Option = Alt in Pygame.
+                        if event.key in (pygame.K_LALT, pygame.K_RALT):
+                            activate_special(p1, game_time)
+                        elif event.key == pygame.K_f:
+                            activate_special(p2, game_time)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse = event.pos
+
+                if state == "language":
+                    for code, rect in language_rects.items():
+                        if rect.collidepoint(mouse):
+                            language = code
+                            if language_from_pause:
+                                state = "game"
+                                paused = True
+                                language_from_pause = False
+                            else:
+                                state = "menu"
+                                show_help = False
+                            break
+
+                elif state == "menu":
+                    if show_help:
+                        if back_rect.collidepoint(mouse):
+                            show_help = False
+
+                    elif training_rect.collidepoint(mouse):
+                        training_wave = min(training_wave, records["training_unlocked"])
+                        state = "training"
+
+                    elif records_rect.collidepoint(mouse):
+                        state = "records"
+
+                    elif index_rect.collidepoint(mouse):
+                        state = "index"
+
+                    elif wardrobe_rect.collidepoint(mouse):
+                        wardrobe_preview_skin = records["skin"]
+                        wardrobe_page = WARDROBE_SKINS.index(wardrobe_preview_skin) // 8 if wardrobe_preview_skin in WARDROBE_SKINS else 0
+                        state = "wardrobe"
+
+                    elif settings_rect.collidepoint(mouse):
+                        settings_from_pause = False
+                        state = "settings"
+
+                    elif language_rect.collidepoint(mouse):
+                        state = "language"
+
+                    elif hard_rect.collidepoint(mouse):
+                        hard = not hard
+
+                    else:
+                        handled = False
+
+                        for name, rect in mouse_rects.items():
+                            if rect.collidepoint(mouse):
+                                mouse_modes[name] = not mouse_modes[name]
+                                handled = True
+                                break
+
+                        if not handled:
+                            for name, rect in info_rects.items():
+                                if rect.collidepoint(mouse):
+                                    show_help = True
+                                    handled = True
+                                    break
+
+                        if not handled:
+                            for name, rect in mode_rects.items():
+                                if rect.collidepoint(mouse):
+                                    mode = name
+                                    training_mode = False
+                                    restart_game()
+                                    state = "game"
+                                    break
+
+                elif state == "index":
+                    if index_back_rect.collidepoint(mouse):
+                        state = "menu"
+                        continue
+                    for i, rect in enumerate(index_wave_rects):
+                        if rect.collidepoint(mouse):
+                            index_wave = i + 1
+                            break
+
+                elif state == "wardrobe":
+                    if wardrobe_back_rect.collidepoint(mouse):
+                        state = "menu"
+                        continue
+                    if wardrobe_prev_rect.collidepoint(mouse):
+                        wardrobe_page = max(0, wardrobe_page - 1)
+                    elif wardrobe_next_rect.collidepoint(mouse):
+                        wardrobe_page = min((len(WARDROBE_SKINS)-1)//8, wardrobe_page + 1)
+                    else:
+                        for i, skin in enumerate(WARDROBE_SKINS[wardrobe_page*8:wardrobe_page*8+8]):
+                            rect = pygame.Rect(45+(i%4)*214, 101+(i//4)*137, 190, 125)
+                            if rect.collidepoint(mouse):
+                                wardrobe_preview_skin = skin
+                                if skin not in records["skins"]:
+                                    break
+                                records["skin"] = skin
+                                sound("power")
+                                save_records()
+                                break
+
+                elif state == "settings":
+                    if settings_back_rect.collidepoint(mouse):
+                        state = "game" if settings_from_pause else "menu"
+                        paused = settings_from_pause
+                        settings_from_pause = False
+                        update_music_volume()
+                    else:
+                        for name, rect in settings_slider_rects.items():
+                            if rect.inflate(28, 32).collidepoint(mouse):
+                                settings_drag = name
+                                set_slider(mouse)
+                                break
+
+                elif state == "game" and paused:
+                    if show_help:
+                        if back_rect.collidepoint(mouse):
+                            show_help = False
+                    else:
+                        for name, rect in pause_rects.items():
+                            if not rect.collidepoint(mouse):
+                                continue
+
+                            if name == "resume":
+                                paused = False
+                            elif name == "controls":
+                                show_help = True
+                            elif name == "language":
+                                language_from_pause = True
+                                state = "language"
+                            elif name == "settings":
+                                settings_from_pause = True
+                                state = "settings"
+                            elif name == "menu":
+                                paused = False
+                                state = "menu"
+                            break
+
+        if state == "intro":
+            background(dt)
+            elapsed = real_now - intro_start
+            progress = clamp(elapsed / 10500, 0, 1)
+            scroll_y = H + 110 - progress * 1040
+
+            draw_logo(W // 2, scroll_y - 185, 370)
+
+            for i, (label, color) in enumerate((
+                ("WMB SOFTWARE", SILVER),
+                ("PRESENTS", SILVER),
+                ("A JOURNEY THROUGH THE STARS", CYAN),
+                ("STARFALL", YELLOW)
+            )):
+                y = scroll_y + i * 180
+                if -150 < y < H + 150:
+                    img = font_title.render(label, True, color)
+                    if img.get_width() > W - 40:
+                        scale = (W - 40) / img.get_width()
+                        img = pygame.transform.smoothscale(
+                            img,
+                            (W - 40, max(1, int(img.get_height() * scale)))
+                        )
+                    screen.blit(img, img.get_rect(center=(W // 2, round(y))))
+
+            draw_text(
+                "SPACE: SKIP INTRO",
+                font_s, SILVER, W // 2, H - 25
+            )
+
+            if elapsed >= 10500:
+                state = "language"
+
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "training":
+            draw_training(dt)
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "language":
+            draw_language(dt)
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "menu":
+            draw_menu(dt)
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "records":
+            draw_records()
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "index":
+            draw_index()
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+        if state == "wardrobe":
+            draw_wardrobe()
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        if state == "settings":
+            draw_settings(dt)
+            pygame.display.flip()
+            await asyncio.sleep(0)
+            continue
+
+        # Spielzeit friert in der Pause vollständig ein.
+        if not paused and not game_over:
+            game_time += int(dt * 1000)
+        update_music_volume()
+        if not paused:
+            finish_upgrade_animation()
+
+        background(0 if paused else dt)
+
+        if not paused and not game_over and transition_until == 0 and not upgrade_pending and game_time >= preview_until:
+            if mode == "duel":
+                update_duel(dt, game_time)
+            else:
+                update_wave_game(dt, game_time)
+
+        if not paused:
+            effects_update(dt, game_time)
+
+        hud(game_time)
+
+        if not paused and not game_over and transition_until == 0 and not upgrade_pending and game_time < preview_until:
+            draw_wave_preview(game_time)
+        if upgrade_pending and not paused:
+            draw_upgrade_selection()
+        if mini_notice and game_time < mini_notice[1]:
+            draw_text(mini_notice[0], font_m, GREEN, W // 2, 80)
+        for ach, expiry in achievement_notice[:]:
+            if game_time >= expiry:
+                achievement_notice.remove((ach, expiry))
+            else:
+                draw_text("★ " + achievement_name(ach), font, YELLOW, W // 2, 40 + achievement_notice.index((ach, expiry)) * 30)
+
+        if transition_until:
+            draw_text(
+                tr(transition_text),
+                font_l,
+                RED if wave == MAX_WAVES and mode != "duel" else GREEN,
+                W // 2, H // 2
+            )
+
+            if not paused and game_time >= transition_until:
+                transition_until = 0
+
+                if mode == "duel":
+                    game_over = True
+                    victory = True
+                elif wave < MAX_WAVES:
+                    wave += 1
+                    if training_mode:
+                        game_over = True
+                        victory = True
+                        update_records()
+                        continue
+                    start_wave()
+                    upgrade_choices = random.sample(UPGRADES, 3)
+                    upgrade_selected = -1
+                    upgrade_pending = True
+                    preview_until = 0
+                else:
+                    game_over = True
+                    victory = True
+                    unlock_achievement("win")
+                    if run_stats.get("rockets", 0) == 0: unlock_achievement("no_rockets")
+                    update_records()
+
+        if game_over:
+            draw_end()
+
+        if paused:
+            draw_pause()
+
+        if not paused and shake > 0.1:
+            amount = int(shake)
+            dx = random.randint(-amount, amount)
+            dy = random.randint(-amount, amount)
+            frame = screen.copy()
+            screen.fill(BG)
+            screen.blit(frame, (dx, dy))
+            shake *= 0.77
+
+        pygame.display.flip()
+        await asyncio.sleep(0)
+    pygame.quit()
+
+asyncio.run(main())
